@@ -1,0 +1,22 @@
+83Z  WARN vector::config::loading: Transform "route_logs._unmatched" has no consumers
+➜  SIEM git:(master) ✗ docker run --rm -v $(pwd)/configs/vector.yaml:/etc/vector/vector.yaml timberio/vector:0.34.1-debian validate --config-yaml /etc/vector/vector.yaml
+Loaded with warnings ["/etc/vector/vector.yaml"]
+------------------------------------------------
+~ Transform "route_logs._unmatched" has no consumers
+
+2026-01-13T19:05:19.234649Z ERROR rdkafka::client: librdkafka: Global error: Resolve (Local: Host resolution failure): redpanda:9092/bootstrap: Failed to resolve 'redpanda:9092': Name or service not known (after 9ms in state CONNECT)    
+2026-01-13T19:05:19.234674Z ERROR rdkafka::client: librdkafka: Global error: AllBrokersDown (Local: All broker connections are down): 1/1 brokers are down    
+Component errors
+----------------
+x Transform "ocsf_network_transform": 
+error[E651]: unnecessary error coalescing operation
+  ┌─ :8:34
+  │
+8 │     .http_response = { "status": to_int(.status) ?? 0 }
+  │                                  ^^^^^^^^^^^^^^^ -- - this expression never resolves
+  │                                  │               │
+  │                                  │               remove this error coalescing operation
+  │                                  this expression can't fail
+  │
+  = see language documentation at https://vrl.dev
+  = try your code in the VRL REPL, learn more at https://vrl.dev/examples

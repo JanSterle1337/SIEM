@@ -1,0 +1,77 @@
+data_dir: "/var/lib/vector"
+
+sources:
+  log_generator:
+    type: "file"
+    include: ["/var/log/siem/raw_ingest.log"]
+    read_from: "beginning"
+
+transforms:
+  route_logs:
+    type: "route"
+    inputs: ["log_generator"]
+    route:
+      ssh: 'contains(string!(.message), "sshd")'
+      web: 'contains(string!(.message), "GET")'
+
+  ocsf_auth_transform:
+    type: "remap"
+    inputs: ["route_logs.ssh"]  
+    source: |
+      # Safely parse - if it fails, it returns an error instead of crashing
+      parsed, err = parse_linux_authorization(.message)
+      if err == null {
+          . = parsed
+          .category_uid = 3002
+          .class_uid = 300201
+          .status = if .status == "success" { "Success" } else { "Failure" }
+          .disposition_id = if .status == "Success" { 1 } else { 2 }
+          .user = { "name": .user }
+          .src_endpoint = { "ip": .src_ip }
+          .metadata = { "product": { "name": "Linux SSH" } }
+          del(.src_ip)
+      } else {
+          log("Failed to parse SSH log: " + err, level: "error")
+          abort
+      }
+
+  ocsf_network_transform:
+    type: "remap"
+    inputs: ["route_logs.web"]
+    source: |
+      parsed, err = parse_common_log(.message)
+      if err == null {
+          . = parsed
+          .category_uid = 4001
+          .class_uid = 400102
+          
+          # Initialize objects
+          .src_endpoint = { "ip": .client_ip }
+          .http_request = { "method": .method, "url": { "path": .path } }
+          
+          # Use a variable to safely convert the status
+          status_int = to_int(.status)
+          
+          .metadata = { "product": { "name": "Nginx" } }
+          
+          # Cleanup
+          del(.client_ip)
+          del(.method)
+          del(.path)
+          del(.status)
+      }
+
+sinks:
+  debug_console:
+    type: "console"
+    inputs: ["ocsf_auth_transform", "ocsf_network_transform"]
+    encoding:
+      codec: "json"
+
+  redpanda_out:
+    type: "kafka"
+    inputs: ["ocsf_auth_transform", "ocsf_network_transform"]
+    bootstrap_servers: "redpanda:9092"
+    topic: "ocsf-events"
+    encoding:
+      codec: "json"
