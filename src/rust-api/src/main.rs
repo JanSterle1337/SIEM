@@ -4,8 +4,6 @@ use rdkafka::message::Message;
 use reqwest::Client;
 use serde_json::Value;
 
-
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
@@ -39,13 +37,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // 2. Forward to Quickwit
             let res = http_client
                 .post(quickwit_url)
+                .timeout(std::time::Duration::from_secs(5))
                 .json(&ocsf_json)
                 .send()
                 .await;
 
             match res {
-                Ok(_) => println!("Successfully indexed in Quickwit"),
-                Err(e) => eprintln!("Quickwit Ingest Error: {}", e),
+                Ok(response) => {
+                    if response.status().is_success() {
+                        println!("Successfully indexed Class {} in Quickwit", ocsf_json["class_uid"]);
+                    } else {
+                        let error_text = response.text().await.unwrap_or_default();
+                        eprintln!("Quickwit rejected event: {}", error_text);
+                    }
+                }
+                Err(e) => eprintln!("❌ Network Error: {}", e),
             }
         }
     }

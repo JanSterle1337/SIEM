@@ -1,5 +1,3 @@
-version: '3.7'
-
 services:
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v23.3.11
@@ -44,10 +42,20 @@ services:
     volumes:
       - ./configs/vector.yaml:/etc/vector/vector.yaml:ro
       - ./data:/var/log/siem:ro
-      - vector_data:/var/lib/vector  # <--- Add this line
+      - vector_data:/var/lib/vector
     environment:
       - VECTOR_CONFIG=/etc/vector/vector.yaml
     restart: on-failure
+
+  quickwit:
+    image: quickwit/quickwit
+    container_name: quickwit
+    volumes:
+      - ./qw_data:/quickwit/qwdata
+    ports:
+      - "7280:7280"
+    command: ["run"]
+    restart: always    
 
 volumes:
   vector_data:
