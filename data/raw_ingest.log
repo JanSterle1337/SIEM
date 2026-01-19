@@ -1,63 +1,42 @@
-192.168.1.10 - - [13/Jan/2026:19:42:25 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 13 19:42:25 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [13/Jan/2026:19:42:26 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 13 19:42:26 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [13/Jan/2026:19:42:26 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 13 19:42:26 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [13/Jan/2026:19:42:27 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 13 19:42:27 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [13/Jan/2026:19:42:27 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 13 19:42:27 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-Jan 13 19:42:28 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [13/Jan/2026:19:42:28 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 13 19:42:28 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [13/Jan/2026:19:42:28 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 13 19:42:28 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [13/Jan/2026:19:42:28 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 13 19:42:28 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [13/Jan/2026:19:42:28 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 13 19:42:28 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [13/Jan/2026:19:42:28 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-10.0.0.99 - - [13/Jan/2026:19:42:28 +0000] "GET /../../etc/passwd HTTP/1.1" 404 512 "-" "Mozilla/5.0"
-192.168.1.10 - - [14/Jan/2026:21:27:44 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 21:27:44 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:21:27:45 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 21:27:45 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:21:27:45 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 21:27:45 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:21:27:46 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 21:27:46 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:21:27:46 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 21:27:46 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-Jan 14 21:27:47 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:21:27:47 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 21:27:47 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:21:27:47 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 21:27:47 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:21:27:47 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 21:27:47 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:21:27:47 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 21:27:47 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:21:27:47 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-10.0.0.99 - - [14/Jan/2026:21:27:47 +0000] "GET /../../etc/passwd HTTP/1.1" 404 512 "-" "Mozilla/5.0"
-192.168.1.10 - - [14/Jan/2026:22:14:19 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 22:14:19 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:22:14:19 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 22:14:19 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:22:14:20 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 22:14:20 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:22:14:20 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 22:14:20 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-192.168.1.10 - - [14/Jan/2026:22:14:21 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
-Jan 14 22:14:21 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
-Jan 14 22:14:21 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:22:14:21 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 22:14:21 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:22:14:21 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 22:14:21 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:22:14:21 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 22:14:21 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:22:14:21 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-Jan 14 22:14:21 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
-10.0.0.99 - - [14/Jan/2026:22:14:21 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
-10.0.0.99 - - [14/Jan/2026:22:14:22 +0000] "GET /../../etc/passwd HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+192.168.1.10 - - [19/Jan/2026:22:00:15 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:00:15 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:00:16 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:00:16 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:00:16 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:00:16 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:00:17 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:00:17 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:00:17 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:00:17 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+Jan 19 22:00:18 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:00:18 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:00:18 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:00:18 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:00:18 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:00:18 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:00:18 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:00:18 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:00:18 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:00:18 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+10.0.0.99 - - [19/Jan/2026:22:00:18 +0000] "GET /../../etc/passwd HTTP/1.1" 404 512 "-" "Mozilla/5.0"
+192.168.1.10 - - [19/Jan/2026:22:08:21 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:08:21 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:08:21 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:08:21 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:08:22 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:08:22 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:08:22 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:08:22 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+192.168.1.10 - - [19/Jan/2026:22:08:23 +0000] "GET /index.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"
+Jan 19 22:08:23 my-linux-server sshd[1234]: Accepted password for employee1 from 192.168.1.50 port 55432 ssh2
+Jan 19 22:08:23 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:08:23 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:08:23 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:08:23 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:08:23 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:08:23 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:08:23 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:08:23 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+Jan 19 22:08:23 my-linux-server sshd[1234]: Failed password for root from 10.0.0.99 port 55432 ssh2
+10.0.0.99 - - [19/Jan/2026:22:08:23 +0000] "GET /admin HTTP/1.1" 401 512 "-" "Mozilla/5.0"
+10.0.0.99 - - [19/Jan/2026:22:08:24 +0000] "GET /../../etc/passwd HTTP/1.1" 404 512 "-" "Mozilla/5.0"
