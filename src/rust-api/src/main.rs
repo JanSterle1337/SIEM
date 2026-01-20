@@ -6,8 +6,7 @@ use serde_json::Value;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    
-    let quickwit_url = "http://localhost:7280/api/v1/ocsf-events/ingest";
+
     let http_client = Client::new();
 
     let consumer: StreamConsumer = ClientConfig::new()
@@ -19,11 +18,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .create()?;
 
 
-    consumer.subscribe(&["ocsf-events"]);
+    consumer.subscribe(&["ocsf-events", "siem-alerts"]);
 
-    println!("🦀 Rust Storage API started. Monitoring Redpanda for OCSF events...");        
+    println!("Rust Storage API started. Monitoring 'ocsf-events' and 'siem-alerts'...");
 
     while let Ok(msg) = consumer.recv().await {
+
+        let topic = msg.topic();
+
         let payload = match msg.payload_view::<str>() {
             None => "",
             Some(Ok(s)) => s,
@@ -31,21 +33,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         // Parse to ensure it's valid OCSF JSON
-        if let Ok(ocsf_json) = serde_json::from_str::<Value>(payload) {
-            println!("📥 Processing event: Class {}", ocsf_json["class_uid"]);
+        if let Ok(json_data) = serde_json::from_str::<Value>(payload) {
+
+            let ingest_url = match topic {
+                "siem-alerts" => {
+                    println!("📥 Processing ALERT: {}", json_data["alert_type"]);
+                    "http://localhost:7280/api/v1/siem-alerts/ingest"
+                },
+                _ => {
+                    println!("📥 Processing LOG: Class {}", json_data["class_uid"]);
+                    "http://localhost:7280/api/v1/ocsf-events/ingest"
+                },
+            };
+
+            println!("Recieved from topic [{}]. Forwarding to Quickwit...", topic);
 
             // 2. Forward to Quickwit
             let res = http_client
-                .post(quickwit_url)
+                .post(ingest_url)
                 .timeout(std::time::Duration::from_secs(5))
-                .json(&ocsf_json)
+                .json(&json_data)
                 .send()
                 .await;
 
             match res {
                 Ok(response) => {
                     if response.status().is_success() {
-                        println!("Successfully indexed Class {} in Quickwit", ocsf_json["class_uid"]);
+                        println!("Successfully indexed Class {} in Quickwit", json_data["class_uid"]);
                     } else {
                         let error_text = response.text().await.unwrap_or_default();
                         eprintln!("Quickwit rejected event: {}", error_text);
