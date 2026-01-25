@@ -1,0 +1,60 @@
+<div class="flex flex-col w-full h-full bg-[#0b0f19] text-slate-300">
+
+    <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-[#111827]">
+        <div class="relative w-1/2">
+            <span class="absolute left-3 top-2.5 opacity-50">🔍</span>
+            <input type="text"
+                   (keyup.enter)="onSearch($event)"
+                   placeholder="Search by IP, message, or class..."
+                   class="w-full bg-[#0b0f19] border border-slate-700 rounded py-2 pl-10 pr-4 text-sm outline-none focus:border-blue-500">
+        </div>
+        <div class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+            Real-time Stream: <span class="text-green-500">Active</span>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left text-[12px] font-mono">
+            <thead class="sticky top-0 bg-[#1a202c] border-b border-slate-700 z-10">
+            <tr class="text-slate-500">
+                <th class="p-3 font-bold">TIMESTAMP</th>
+                <th class="p-3 font-bold">EVENT CLASS</th>
+                <th class="p-3 font-bold">SOURCE IP</th>
+                <th class="p-3 font-bold">MESSAGE</th>
+            </tr>
+            </thead>
+            <tbody>
+            <ng-container *ngFor="let log of logs; let i = index">
+                <tr (click)="toggleRow(i)"
+                    class="border-b border-slate-900 hover:bg-blue-600/5 cursor-pointer transition-colors group">
+                    <td class="p-3 text-blue-400 whitespace-nowrap">
+                        {{ log.timestamp | date:'HH:mm:ss.SSS' }}
+                    </td>
+                    <td class="p-3">
+              <span *ngIf="log.class_uid" class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                {{ log.class_uid }}
+              </span>
+                        <span *ngIf="!log.class_uid" class="text-slate-600 italic">raw_log</span>
+                    </td>
+                    <td class="p-3 text-slate-400">{{ log.src_endpoint?.ip || '-' }}</td>
+                    <td class="p-3 text-slate-400 truncate max-w-md group-hover:text-slate-200">
+                        {{ log.message }}
+                    </td>
+                </tr>
+
+                <tr *ngIf="expandedRow === i" class="bg-black/40">
+                    <td colspan="4" class="p-4 border-b border-blue-500/30">
+                        <div class="bg-[#0b0f19] p-4 rounded border border-slate-800">
+                            <div class="flex gap-4 mb-2 text-[10px] uppercase font-bold">
+                                <span class="text-slate-500">Host: {{ log.host }}</span>
+                                <span class="text-slate-500">Source: {{ log.source_type }}</span>
+                            </div>
+                            <pre class="text-blue-300 text-[11px] overflow-x-auto">{{ log | json }}</pre>
+                        </div>
+                    </td>
+                </tr>
+            </ng-container>
+            </tbody>
+        </table>
+    </div>
+</div>

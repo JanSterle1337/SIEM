@@ -7,26 +7,44 @@ mod consumer;
 use config::Config;
 use std::sync::Arc;
 use crate::services::QuickwitService;
+use tower_http::cors::{Any, CorsLayer};
+use axum::http::Method;
 
 #[tokio::main]
 async fn main() {
+    // Load config once
     let config = Config::from_env();
-    let qw_service = Arc::new(QuickwitService::new(config));
-    println!("SIEM Backend starting...");
 
+    // 1. Initialize Quickwit Service with a reference
+    let qw_service = Arc::new(QuickwitService::new(&config));
+    println!("🛡️ SIEM Backend starting...");
+
+    // 2. Start Redpanda Consumer in the background
+    // We create a second config instance for the worker thread
     let worker_config = Config::from_env();
     let worker_service = Arc::clone(&qw_service);
-    
+
     tokio::spawn(async move {
         consumer::worker::start_recording(worker_config, worker_service).await;
     });
-    
-    println!("Web server starting...");
 
-    loop {
-        tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-    }
+    // 3. Setup CORS for Angular (Port 4200)
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST])
+        .allow_headers(Any);
 
+    // 4. Build Router and Start Server
+    let addr = format!("0.0.0.0:{}", config.server_port);
+    println!("🌐 Web server listening on {}", addr);
+
+    let app = handlers::create_router(Arc::clone(&qw_service))
+        .layer(cors);
+
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+
+    // This line "holds" the program open. No loop needed!
+    axum::serve(listener, app).await.unwrap();
 }
 
 // use rdkafka::consumer::{Consumer, StreamConsumer};

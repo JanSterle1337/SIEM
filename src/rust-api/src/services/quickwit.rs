@@ -9,7 +9,7 @@ pub struct QuickwitService {
 }
 
 impl QuickwitService {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: &Config) -> Self {
         Self {
             client: Client::new(),
             base_url: config.quickwit_url.clone()

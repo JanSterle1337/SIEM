@@ -1,0 +1,23 @@
+<nav class="flex flex-col h-full w-full bg-[#111827] border-r border-slate-800 items-center py-4 gap-4">
+    <div class="text-2xl mb-4">🛡️</div>
+
+    <ul class="flex flex-col w-full gap-2">
+        <li routerLink="/dashboard" routerLinkActive="bg-blue-600/10 text-blue-400 border-r-2 border-blue-500"
+            class="flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-slate-800 transition-all text-slate-400 group">
+            <span class="text-xl">🖥️</span>
+            <span class="text-[10px] uppercase font-bold mt-1 group-hover:text-white">Home</span>
+        </li>
+
+        <li routerLink="/logs" routerLinkActive="bg-blue-600/10 text-blue-400 border-r-2 border-blue-500"
+            class="flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-slate-800 transition-all text-slate-400 group">
+            <span class="text-xl">📊</span>
+            <span class="text-[10px] uppercase font-bold mt-1 group-hover:text-white">Logs</span>
+        </li>
+
+        <li routerLink="/alerts" routerLinkActive="bg-blue-600/10 text-blue-400 border-r-2 border-blue-500"
+            class="flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-slate-800 transition-all text-slate-400 group">
+            <span class="text-xl">🚨</span>
+            <span class="text-[10px] uppercase font-bold mt-1 group-hover:text-white">Alerts</span>
+        </li>
+    </ul>
+</nav>
