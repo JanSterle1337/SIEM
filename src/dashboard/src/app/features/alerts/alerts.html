@@ -1,0 +1,42 @@
+<div class="flex flex-col w-full h-full p-6 space-y-4 bg-[#0b0f19]">
+    <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold text-white">Active Security Alerts</h2>
+        <div class="flex items-center gap-3">
+            <span *ngIf="!isLoading" class="text-[10px] text-slate-500 font-mono animate-pulse">● LIVE STREAM</span>
+            <span class="text-xs bg-red-500/20 text-red-500 px-2 py-1 rounded border border-red-500/30 font-bold">
+                {{ alerts.length }} Critical Issues
+            </span>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-4 overflow-y-auto pr-2">
+        <div *ngIf="isLoading" class="flex flex-col items-center justify-center p-20 border border-dashed border-slate-800 rounded-lg">
+            <div class="animate-spin text-2xl mb-2 text-blue-500">⚙️</div>
+            <p class="text-slate-500 font-mono text-sm tracking-widest">SCANNING DATASTREAM...</p>
+        </div>
+
+        <div *ngIf="!isLoading && alerts.length === 0" class="flex flex-col items-center justify-center p-20 border border-slate-800 bg-[#111827]/50 rounded-lg">
+            <p class="text-slate-500 italic">No alerts found in the current window.</p>
+        </div>
+
+        <div *ngFor="let alert of alerts"
+             class="bg-[#111827] border-l-4 border-red-600 p-4 rounded shadow-lg flex justify-between items-center hover:bg-slate-800 transition-colors shrink-0">
+            <div class="flex items-start gap-4">
+                <span class="text-2xl">🚨</span>
+                <div>
+                    <h3 class="font-bold text-slate-200">{{ alert.alert_type }}</h3>
+                    <p class="text-sm text-slate-400">{{ alert.msg }}</p>
+                    <div class="flex gap-2 mt-2">
+                        <span class="text-[10px] bg-black/40 px-2 py-1 rounded font-mono text-blue-400">SRC: {{ alert.source_ip }}</span>
+                        <span class="text-[10px] bg-black/40 px-2 py-1 rounded font-mono text-slate-500">
+                            {{ alert.timestamp | date:'HH:mm:ss' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <button class="text-xs font-bold text-slate-500 hover:text-white border border-slate-700 px-3 py-1 rounded transition-all hover:bg-slate-700">
+                DISMISS
+            </button>
+        </div>
+    </div>
+</div>
