@@ -1,71 +1,279 @@
-data_dir: "/var/lib/vector"
-
 sources:
-  log_generator:
-    type: "file"
-    include: ["/var/log/siem/raw_ingest.log"]
-    read_from: "beginning"
-
+  nginx_logs:
+    type: file
+    include:
+      - /var/log/siem/logs/nginx/access.log
+    read_from: beginning
+  api_logs:
+    type: file
+    include:
+      - /var/log/siem/logs/apps/api.log
+    read_from: beginning
+  auth_logs:
+    type: file
+    include:
+      - /var/log/siem/logs/auth/secure.log
+    read_from: beginning
+  firewall_logs:
+    type: file
+    include:
+      - /var/log/siem/logs/firewall/trace.log
+    read_from: beginning
+  syslog_logs:
+    type: file
+    include:
+      - /var/log/siem/logs/system/syslog.log
+    read_from: beginning
 transforms:
-  route_logs:
-    type: "route"
-    inputs: ["log_generator"]
-    route:
-      ssh: 'contains(string!(.message), "sshd")'
-      web: 'contains(string!(.message), "GET")'
+  ocsf_http:
+    type: remap
+    inputs:
+      - nginx_logs
+    source: >
+      parsed = parse_regex!(.message, r'^(?P<ip>[\d\.]+) - - \[(?P<ts>.*?)\]
+      "(?P<method>\w+) (?P<path>.*?) .*?" (?P<status>\d+) (?P<size>\d+) "-"
+      "(?P<agent>.*?)" "(?P<trace_id>.*?)"$')
 
-  ocsf_auth_transform:
-    type: "remap"
-    inputs: ["route_logs.ssh"]
-    source: |
-      # Manual regex for SSH is safer for custom hostnames
-      # Matches: ... from <ip> port ...
-      parsed = parse_regex(.message, r'from (?P<src_ip>[\d\.]+) port') ?? {}
-      
-      .category_uid = 3002
-      .class_uid = 300201
-      .status = if contains(string!(.message), "Accepted") { "Success" } else { "Failure" }
-      .disposition_id = if .status == "Success" { 1 } else { 2 }
-      
-      # Extract user
-      user_match = parse_regex(.message, r'for (?P<user>\S+) from') ?? {}
-      .user = { "name": user_match.user }
-      
-      # Map IP correctly to OCSF src_endpoint
-      .src_endpoint = { "ip": parsed.src_ip }
-      .metadata = { "product": { "name": "Linux SSH" } }
 
-  ocsf_network_transform:
-    type: "remap"
-    inputs: ["route_logs.web"]
+      . = {}
+
+      .metadata = {}
+
+      .src_endpoint = {}
+
+      .http_request = {}
+
+      .http_request.url = {}
+
+      .http_response = {}
+
+
+      .metadata.version = "1.1.0"
+
+      .class_uid = 4002
+
+      .class_name = "HTTP Activity"
+
+      .time = parse_timestamp!(parsed.ts, format: "%d/%b/%Y:%H:%M:%S %z")
+
+
+      .src_endpoint.ip = parsed.ip
+
+      .http_request.method = parsed.method
+
+      .http_request.url.path = parsed.path
+
+      .http_request.user_agent = parsed.agent
+
+      .http_response.status = to_int!(parsed.status)
+
+      .trace_id = parsed.trace_id
+
+      .severity_id = if to_int!(parsed.status) >= 400 { 3 } else { 1 }
+  ocsf_api:
+    type: remap
+    inputs:
+      - api_logs
     source: |
-      # parse_common_log expects the standard Apache/Nginx format
-      parsed, err = parse_common_log(.message)
-      if err == null {
-          . = parsed
-          .category_uid = 4001
-          .class_uid = 400102
-          .src_endpoint = { "ip": .client_ip }
-          .http_request = { "method": .method, "url": { "path": .path } }
-          .metadata = { "product": { "name": "Nginx" } }
-          del(.client_ip)
+      parts, err = split(.message, " api-srv: ")
+
+      if err == null && length(parts) > 1 {
+          ts_part = parts[0]
+          kv_part = parts[1]
+          parsed = parse_key_value!(kv_part)
+          
+          . = {}
+          .metadata = {}
+          .api = {}
+          .http_response = {}
+
+          .metadata.version = "1.1.0"
+          .class_uid = 6003
+          .time = parse_timestamp!(ts_part, format: "%FT%T.%f")
+          
+          .api.method = parsed.method
+          .api.endpoint = parsed.endpoint
+          .http_response.status = to_int!(parsed.status)
+          .trace_id = parsed.trace_id
+          
+          # Use ! to tell Vector to abort if 'latency' is missing/invalid
+          lat_val = replace!(parsed.latency, "ms", "")
+          .duration = to_int!(lat_val)
       } else {
-          # Fallback: simple regex for the IP if the full parser fails
-          ip_match = parse_regex(.message, r'^(?P<ip>[\d\.]+)') ?? {}
-          .src_endpoint = { "ip": ip_match.ip }
+          abort
+      }
+  ocsf_auth:
+    type: remap
+    inputs:
+      - auth_logs
+    source: |
+      auth_regex = r'^(?P<ts>\w+\s+\d+\s+\d+:\d+:\d+)\s+(?P<host>[^\s]+)\s+sshd\[(?P<pid>\d+)\]:\s+(?P<msg>Accepted|Failed)\s+password\s+for\s+(?P<user>[^\s]+)\s+from\s+(?P<ip>[\d\.]+)\s+port\s+(?P<port>\d+).*$'
+      acct_regex = r'^(?P<ts>\w+\s+\d+\s+\d+:\d+:\d+)\s+(?P<host>[^\s]+)\s+(?P<action>\w+)\[(?P<pid>\d+)\]:\s+(?P<detail>.*)$'
+
+      auth_parsed, err = parse_regex(.message, auth_regex)
+
+      if err == null {
+          . = {}
+          .metadata = {}
+          .user = {}
+          .src_endpoint = {}
+          .device = {}
+          
+          .metadata.version = "1.1.0"
+          .class_uid = 3002
+          .class_name = "Authentication"
+          
+          current_year = to_string(now()) 
+          year = slice!(current_year, 0, 4)
+          
+          # Using interpolation to avoid fallible concatenation
+          ts_with_year = "#{year} #{auth_parsed.ts}"
+          
+          .time = parse_timestamp!(ts_with_year, format: "%Y %b %d %H:%M:%S")
+
+          .status = if auth_parsed.msg == "Accepted" { "Success" } else { "Failure" }
+          .status_id = if auth_parsed.msg == "Accepted" { 1 } else { 2 }
+          
+          .user.name = auth_parsed.user
+          .src_endpoint.ip = auth_parsed.ip
+          .src_endpoint.port = to_int!(auth_parsed.port)
+          .device.hostname = auth_parsed.host
+          .severity_id = if .status_id == 2 { 3 } else { 1 }
+
+      } else {
+          acct_parsed, err = parse_regex(.message, acct_regex)
+          if err == null {
+              . = {}
+              .metadata = {}
+              .device = {}
+              .user = {}
+              
+              .metadata.version = "1.1.0"
+              .class_uid = 3001
+              .class_name = "Account Change"
+              
+              current_year = to_string(now())
+              year = slice!(current_year, 0, 4)
+              
+              ts_with_year = "#{year} #{acct_parsed.ts}"
+              
+              .time = parse_timestamp!(ts_with_year, format: "%Y %b %d %H:%M:%S")
+
+              .device.hostname = acct_parsed.host
+              .activity_name = acct_parsed.action
+              
+              # FIX: Added ! to split to make it infallible
+              user_parts = split!(acct_parsed.detail, "name=")
+              if length(user_parts) > 1 {
+                  .user.name = user_parts[1]
+              }
+              .severity_id = 2 
+          } else {
+              abort
+          }
+      }
+
+  ocsf_network:
+    type: remap
+    inputs:
+      - firewall_logs
+    source: |
+      # Pattern: TS Host filter: ACTION PROTO SRC_IP:PORT -> DST_IP:PORT (policy: POLICY)
+      fw_regex = r'^(?P<ts>[\d\-T:\.]+)\s+(?P<host>[^\s]+)\s+filter:\s+(?P<action>\w+)\s+(?P<proto>\w+)\s+(?P<src_ip>[\d\.]+):(?P<src_port>\d+)\s+->\s+(?P<dst_ip>[\d\.]+):(?P<dst_port>\d+)\s+\(policy:\s+(?P<policy>[^\)]+)\)$'
+      
+      parsed, err = parse_regex(.message, fw_regex)
+      
+      if err == null {
+          . = {}
+          # Initialize objects to avoid E642
+          .metadata = {}
+          .connection_info = {}
+          .src_endpoint = {}
+          .dst_endpoint = {}
+          .device = {}
+          
+          .metadata.version = "1.1.0"
+          .class_uid = 4001
+          .class_name = "Network Activity"
+          .time = parse_timestamp!(parsed.ts, format: "%FT%T.%f")
+          
+          .status = if parsed.action == "ALLOW" { "Success" } else { "Failure" }
+          .disposition = parsed.action
+          
+          .connection_info.protocol_name = parsed.proto
+          .connection_info.boundary = "internal" # Assuming internal for this lab
+          
+          .src_endpoint.ip = parsed.src_ip
+          .src_endpoint.port = to_int!(parsed.src_port)
+          
+          .dst_endpoint.ip = parsed.dst_ip
+          .dst_endpoint.port = to_int!(parsed.dst_port)
+          
+          .device.hostname = parsed.host
+          .severity_id = if parsed.action == "DENY" { 2 } else { 1 }
+      } else {
+          abort
+      }
+
+  ocsf_syslog:
+    type: remap
+    inputs:
+      - syslog_logs
+    source: |
+      # Pattern: Month Day Time Host Process[PID]: Message
+      sys_regex = r'^(?P<ts>\w+\s+\d+\s+\d+:\d+:\d+)\s+(?P<host>[^\s]+)\s+(?P<app>[^\[\s:]+)(?:\[(?P<pid>\d+)\])?:\s+(?P<msg>.*)$'
+      
+      parsed, err = parse_regex(.message, sys_regex)
+      
+      if err == null {
+          # Use string! to convert the value and tell VRL it's definitely a string
+          msg_str = string!(parsed.msg) 
+
+          . = {}
+          .metadata = {}
+          .device = {}
+          .process = {}
+          
+          .metadata.version = "1.1.0"
+          .class_uid = 1007
+          .class_name = "Process Activity"
+          
+          current_year = to_string(now())
+          year = slice!(current_year, 0, 4)
+          ts_with_year = "#{year} #{parsed.ts}"
+          .time = parse_timestamp!(ts_with_year, format: "%Y %b %d %H:%M:%S")
+          
+          .device.hostname = parsed.host
+          .process.name = parsed.app
+          
+          if parsed.pid != null {
+              .process.pid = to_int!(parsed.pid)
+          }
+          
+          .message = msg_str
+          
+          if contains(msg_str, "Kill") || contains(msg_str, "Out of memory") {
+              .severity_id = 4 
+          } else {
+              .severity_id = 1 
+          }
+      } else {
+          abort
       }
 
 sinks:
   debug_console:
-    type: "console"
-    inputs: ["ocsf_auth_transform", "ocsf_network_transform"]
+    type: console
+    inputs: ["ocsf_http", "ocsf_api", "ocsf_auth", "ocsf_network", "ocsf_syslog"]
     encoding:
-      codec: "json"
-
+      codec: json
   redpanda_out:
-    type: "kafka"
-    inputs: ["ocsf_auth_transform", "ocsf_network_transform"]
-    bootstrap_servers: "redpanda:9092"
-    topic: "ocsf-events"
+    type: kafka
+    inputs:
+      - ocsf_*
+    bootstrap_servers: 'redpanda:9092'
+    topic: ocsf-events
     encoding:
-      codec: "json"
+      codec: json
+    batch:
+      max_bytes: 1048576

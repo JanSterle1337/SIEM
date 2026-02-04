@@ -17,6 +17,15 @@ services:
       interval: 5s
       timeout: 10s
       retries: 5
+    
+#  redpanda-setup:
+#    image: docker.redpanda.com/redpandadata/redpanda:v23.3.11
+#    container_name: redpanda-setup
+#    depends_on:
+#      redpanda:
+#        condition: service_healthy
+#    entrypoint: /bin/sh
+#    command: -c "rpk topic create ocsf-events --brokers redpanda:9092"
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.4.3
@@ -41,7 +50,7 @@ services:
         condition: service_healthy
     volumes:
       - ./configs/vector.yaml:/etc/vector/vector.yaml:ro
-      - ./data:/var/log/siem:ro
+      - ./scripts/data:/var/log/siem:ro
       - vector_data:/var/lib/vector
     environment:
       - VECTOR_CONFIG=/etc/vector/vector.yaml
