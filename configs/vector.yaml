@@ -29,47 +29,43 @@ transforms:
     type: remap
     inputs:
       - nginx_logs
-    source: >
-      parsed = parse_regex!(.message, r'^(?P<ip>[\d\.]+) - - \[(?P<ts>.*?)\]
-      "(?P<method>\w+) (?P<path>.*?) .*?" (?P<status>\d+) (?P<size>\d+) "-"
-      "(?P<agent>.*?)" "(?P<trace_id>.*?)"$')
+    source: |
+      # Updated Regex with Optional Trace ID
+      # (?: ...)? makes the trailing space and quoted trace_id optional
+      http_regex = r'^(?P<ip>[\d\.]+) - - \[(?P<ts>.*?)\] "(?P<method>\w+) (?P<path>.*?) .*?" (?P<status>\d+) (?P<size>\d+) "(?P<ref>.*?)" "(?P<agent>.*?)"(?:\s+"(?P<trace_id>.*?)")?$'
+      
+      parsed, err = parse_regex(.message, http_regex)
 
+      if err == null {
+          . = {}
+          .metadata = {}
+          .src_endpoint = {}
+          .http_request = {}
+          .http_request.url = {}
+          .http_response = {}
 
-      . = {}
+          .metadata.version = "1.1.0"
+          .class_uid = 4002
+          .class_name = "HTTP Activity"
+          .time = parse_timestamp!(parsed.ts, format: "%d/%b/%Y:%H:%M:%S %z")
 
-      .metadata = {}
-
-      .src_endpoint = {}
-
-      .http_request = {}
-
-      .http_request.url = {}
-
-      .http_response = {}
-
-
-      .metadata.version = "1.1.0"
-
-      .class_uid = 4002
-
-      .class_name = "HTTP Activity"
-
-      .time = parse_timestamp!(parsed.ts, format: "%d/%b/%Y:%H:%M:%S %z")
-
-
-      .src_endpoint.ip = parsed.ip
-
-      .http_request.method = parsed.method
-
-      .http_request.url.path = parsed.path
-
-      .http_request.user_agent = parsed.agent
-
-      .http_response.status = to_int!(parsed.status)
-
-      .trace_id = parsed.trace_id
-
-      .severity_id = if to_int!(parsed.status) >= 400 { 3 } else { 1 }
+          .src_endpoint.ip = parsed.ip
+          .http_request.method = parsed.method
+          .http_request.url.path = parsed.path
+          .http_request.user_agent = parsed.agent
+          .http_response.status = to_int!(parsed.status)
+          
+          # Only map trace_id if it exists in the log line
+          if parsed.trace_id != null && parsed.trace_id != "" {
+              .trace_id = parsed.trace_id
+          }
+          
+          .severity_id = if to_int!(parsed.status) >= 400 { 3 } else { 1 }
+      } else {
+          .class_uid = 0
+          .class_name = "Unknown"
+          .debug_msg = .message
+      }
   ocsf_api:
     type: remap
     inputs:
@@ -89,6 +85,7 @@ transforms:
 
           .metadata.version = "1.1.0"
           .class_uid = 6003
+          .class_name = "API Activity"
           .time = parse_timestamp!(ts_part, format: "%FT%T.%f")
           
           .api.method = parsed.method
