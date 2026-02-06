@@ -283,6 +283,27 @@ transforms:
           .time = now()
       }
 
+  raw_labeler:
+    type: remap
+    inputs: ["nginx_logs", "api_logs", "auth_logs", "firewall_logs", "syslog_logs"]
+    source: |
+      # Ensure .file exists and is a string before checking
+      file_path = to_string(.file) ?? ""
+
+      if contains(file_path, "access.log") {
+          .label = "nginx"
+      } else if contains(file_path, "api.log") {
+          .label = "api"
+      } else if contains(file_path, "secure.log") {
+          .label = "auth"
+      } else if contains(file_path, "trace.log") {
+          .label = "firewall"
+      } else if contains(file_path, "syslog.log") {
+          .label = "syslog"
+      } else {
+          .label = "misc"
+      }
+
 sinks:
   debug_console:
     type: console
@@ -295,6 +316,15 @@ sinks:
       - ocsf_*
     bootstrap_servers: 'redpanda:9092'
     topic: ocsf-events
+    encoding:
+      codec: json
+    batch:
+      max_bytes: 1048576
+  redpanda_raw:
+    type: kafka
+    inputs: ["raw_labeler"] # Point here!
+    bootstrap_servers: 'redpanda:9092'
+    topic: 'raw-{{ label }}'
     encoding:
       codec: json
     batch:
