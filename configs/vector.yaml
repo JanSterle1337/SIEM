@@ -24,6 +24,14 @@ sources:
     include:
       - /var/log/siem/logs/system/syslog.log
     read_from: beginning
+  host_telemetry:
+    type: host_metrics
+    collectors:
+      - cpu
+      - memory
+      - disk
+      - network
+    scrape_interval_secs: 15
 transforms:
   ocsf_http:
     type: remap
@@ -303,6 +311,26 @@ transforms:
       } else {
           .label = "misc"
       }
+  metrics_to_json:
+    type: metric_to_log
+    inputs: ["host_telemetry"]
+  
+  metrics_quickwit_map:
+    type: remap
+    inputs: ["metrics_to_json"]
+    source: |
+      .timestamp = .timestamp
+      .host = .tags.host || "unknown-host"
+      .metric_name = .name
+      .value = to_float(.gauge.value || .counter.value) ?? 0.0
+      
+      # Clean up tags and metadata
+      del(.tags.host)
+      .tags = .tags
+      del(.name)
+      del(.kind)
+      del(.gauge)
+      del(.counter)
 
 sinks:
   debug_console:
@@ -329,3 +357,10 @@ sinks:
       codec: json
     batch:
       max_bytes: 1048576
+  redpanda_metrics:
+    type: kafka
+    inputs: ["metrics_quickwit_map"]
+    bootstrap_servers: 'redpanda:9092'
+    topic: 'metrics-raw'
+    encoding:
+      codec: json

@@ -17,15 +17,17 @@ services:
       interval: 5s
       timeout: 10s
       retries: 5
-    
-#  redpanda-setup:
-#    image: docker.redpanda.com/redpandadata/redpanda:v23.3.11
-#    container_name: redpanda-setup
-#    depends_on:
-#      redpanda:
-#        condition: service_healthy
-#    entrypoint: /bin/sh
-#    command: -c "rpk topic create ocsf-events --brokers redpanda:9092"
+
+  redpanda-provisioner:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    depends_on:
+      - redpanda
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        sleep 10;
+        rpk topic create ocsf-events --brokers redpanda:9092;
+        rpk topic create metrics-raw --brokers redpanda:9092;
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.4.3
