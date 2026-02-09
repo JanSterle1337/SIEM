@@ -32,6 +32,16 @@ sources:
       - disk
       - network
     scrape_interval_secs: 15
+  python_metrics:
+    type: file
+    include:
+      - /var/log/siem/logs/system/metrics.log
+    read_from: beginning
+  ground_truth_file:
+    type: file
+    include:
+      - /var/log/siem/logs/meta/ground_truth.json
+    read_from: beginning
 transforms:
   ocsf_http:
     type: remap
@@ -331,6 +341,34 @@ transforms:
       del(.kind)
       del(.gauge)
       del(.counter)
+  parse_python_metrics:
+    type: remap
+    inputs:
+      - python_metrics
+    source: |
+      parsed, err = parse_json(.message)
+      if err == null {
+          . = parsed
+          # Ensure types are correct for Quickwit indexing
+          .value = to_float(.value) ?? 0.0
+          del(.message)
+      } else {
+          abort
+      }
+  parse_ground_truth:
+    type: remap
+    inputs:
+      - ground_truth_file
+    source: |
+      parsed, err = parse_json(.message)
+      if err == null {
+          . = parsed
+          # Optional: Add a label to identify this as ground truth in downstream systems
+          .source_type = "ground_truth"
+          del(.message)
+      } else {
+          abort
+      }  
 
 sinks:
   debug_console:
@@ -359,8 +397,15 @@ sinks:
       max_bytes: 1048576
   redpanda_metrics:
     type: kafka
-    inputs: ["metrics_quickwit_map"]
+    inputs: ["parse_python_metrics"]
     bootstrap_servers: 'redpanda:9092'
     topic: 'metrics-raw'
+    encoding:
+      codec: json
+  redpanda_ground_truth:
+    type: kafka
+    inputs: ["parse_ground_truth"]
+    bootstrap_servers: 'redpanda:9092'
+    topic: 'ground-truth-events'
     encoding:
       codec: json

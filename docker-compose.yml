@@ -28,6 +28,7 @@ services:
         sleep 10;
         rpk topic create ocsf-events --brokers redpanda:9092;
         rpk topic create metrics-raw --brokers redpanda:9092;
+        rpk topic create ground-truth-events --brokers redpanda:9092;
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.4.3
