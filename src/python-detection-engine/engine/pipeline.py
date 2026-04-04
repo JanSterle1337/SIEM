@@ -8,7 +8,8 @@ from engine.anomaly.base import AnomalyDetector
 from engine.config import EngineConfig
 from engine.consumers import KafkaTopicBindings
 from engine.evaluation.ground_truth import GroundTruthEvaluator
-from engine.rules.base import DetectionRule
+from engine.rules.base import DetectionRule, RuleContext
+from engine.schemas.alerts import DetectionAlert
 from engine.schemas.events import NormalizedEvent
 from engine.state import CorrelationState
 
@@ -47,7 +48,8 @@ class DetectionPipeline:
         if event.event_type == "ground_truth" and self.config.evaluation_enabled:
             self.evaluator.ingest_ground_truth(event)
 
-        print(self._format_event_summary(event))
+        #print(self._format_event_summary(event))
+        self._evaluate_rules(event)
         return event
 
     @staticmethod
@@ -81,4 +83,36 @@ class DetectionPipeline:
             f"trace_id={trace_id} "
             f"metric={metric} "
             f"truth={truth}"
+        )
+
+    def _evaluate_rules(self, event: NormalizedEvent) -> None:
+        if not self.config.rules_enabled:
+            return
+
+        context = RuleContext(
+            state=self.state,
+            evaluation_enabled=self.config.evaluation_enabled,
+        )
+
+        for rule in self.rules:
+            alerts = rule.evaluate(event, context)
+            for alert in alerts:
+                print(self._format_alert_summary(alert))
+
+    @staticmethod
+    def _format_alert_summary(alert: DetectionAlert) -> str:
+        host = alert.host or "-"
+        src_ip = alert.src_ip or "-"
+        trace_id = alert.trace_id or "-"
+        rule_id = alert.rule_id or "-"
+        return (
+            "[alert] "
+            f"severity={alert.severity} "
+            f"priority={alert.priority_score} "
+            f"detection_type={alert.detection_type} "
+            f"rule_id={rule_id} "
+            f"title={alert.title} "
+            f"host={host} "
+            f"src_ip={src_ip} "
+            f"trace_id={trace_id}"
         )
