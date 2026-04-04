@@ -1,8 +1,8 @@
 from __future__ import annotations
-
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from typing import Any
+from engine.schemas.events import NormalizedEvent
 
 
 @dataclass(slots=True)
@@ -27,3 +27,39 @@ class CorrelationState:
             "tracked_traces": len(self.by_trace_id),
             "tracked_metric_hosts": len(self.metrics_by_host),
         }
+
+    def remember(self, event: NormalizedEvent, max_items: int = 50) -> None:
+        event_snapshot = {
+            "timestamp": event.timestamp.isoformat(),
+            "event_type": event.event_type,
+            "class_uid": event.class_uid,
+            "host": event.host,
+            "src_ip": event.src_ip,
+            "trace_id": event.trace_id,
+            "message": event.message,
+        }
+
+        if event.src_ip:
+            self.by_ip[event.src_ip].append(event_snapshot)
+            self._trim(self.by_ip[event.src_ip], max_items)
+
+        if event.host:
+            self.by_host[event.host].append(event_snapshot)
+            self._trim(self.by_host[event.host], max_items)
+
+        if event.trace_id:
+            self.by_trace_id[event.trace_id].append(event_snapshot)
+            self._trim(self.by_trace_id[event.trace_id], max_items)
+
+        if event.event_type == "metric" and event.host and event.metric_name:
+            host_metrics = self.metrics_by_host[event.host]
+            values = host_metrics.setdefault(event.metric_name, [])
+            if event.metric_value is not None:
+                values.append(event.metric_value)
+            if len(values) > max_items:
+                del values[:-max_items]
+
+    @staticmethod
+    def _trim(items: deque[dict[str, Any]], max_items: int) -> None:
+        while len(items) > max_items:
+            items.popleft()

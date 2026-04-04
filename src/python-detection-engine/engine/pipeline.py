@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from json import JSONDecodeError
 
 from engine.anomaly.base import AnomalyDetector
 from engine.config import EngineConfig
+from engine.consumers import KafkaTopicBindings
 from engine.evaluation.ground_truth import GroundTruthEvaluator
 from engine.rules.base import DetectionRule
+from engine.schemas.events import NormalizedEvent
 from engine.state import CorrelationState
 
 
@@ -16,6 +20,10 @@ class DetectionPipeline:
     state: CorrelationState = field(default_factory=CorrelationState)
     anomaly_detector: AnomalyDetector = field(default_factory=AnomalyDetector)
     evaluator: GroundTruthEvaluator = field(default_factory=GroundTruthEvaluator)
+    topic_bindings: KafkaTopicBindings = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.topic_bindings = KafkaTopicBindings.from_config(self.config)
 
     def describe_startup(self) -> None:
         rule_count = len(self.rules) if self.config.rules_enabled else 0
@@ -26,3 +34,51 @@ class DetectionPipeline:
         print(f"  Rules enabled: {self.config.rules_enabled} ({rule_count} loaded)")
         print(f"  Anomaly enabled: {self.config.anomaly_enabled}")
         print(f"  Evaluation enabled: {self.config.evaluation_enabled}")
+
+    def process_message(self, topic: str, raw_message: str) -> NormalizedEvent | None:
+        payload = self._decode_payload(raw_message)
+        if payload is None:
+            print(f"[decode-error] topic={topic} message={raw_message[:160]}")
+            return None
+
+        event = NormalizedEvent.from_topic_payload(topic, payload)
+        self.state.remember(event)
+
+        if event.event_type == "ground_truth" and self.config.evaluation_enabled:
+            self.evaluator.ingest_ground_truth(event)
+
+        print(self._format_event_summary(event))
+        return event
+
+    @staticmethod
+    def _decode_payload(raw_message: str) -> dict | None:
+        try:
+            payload = json.loads(raw_message)
+        except JSONDecodeError:
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    def _format_event_summary(self, event: NormalizedEvent) -> str:
+        timestamp = event.timestamp.isoformat()
+        class_uid = event.class_uid if event.class_uid is not None else "-"
+        host = event.host or "-"
+        src_ip = event.src_ip or "-"
+        trace_id = event.trace_id or "-"
+        metric = (
+            f"{event.metric_name}={event.metric_value}"
+            if event.metric_name and event.metric_value is not None
+            else "-"
+        )
+        truth = event.ground_truth_intent or "-"
+        return (
+            "[event] "
+            f"time={timestamp} "
+            f"topic={event.source_topic} "
+            f"type={event.event_type} "
+            f"class_uid={class_uid} "
+            f"host={host} "
+            f"src_ip={src_ip} "
+            f"trace_id={trace_id} "
+            f"metric={metric} "
+            f"truth={truth}"
+        )

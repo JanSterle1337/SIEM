@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from kafka import KafkaConsumer
+
 from engine.config import EngineConfig
 
 
@@ -21,3 +23,14 @@ class KafkaTopicBindings:
             ground_truth_topic=topics.get("ground-truth-events", "ground-truth-events"),
             alerts_topic=config.alert_topic,
         )
+
+
+def build_consumer(config: EngineConfig) -> KafkaConsumer:
+    return KafkaConsumer(
+        *config.input_topics,
+        bootstrap_servers=config.kafka_brokers,
+        group_id=config.consumer_group,
+        value_deserializer=lambda message: message.decode("utf-8"),
+        auto_offset_reset="latest",
+        enable_auto_commit=True,
+    )

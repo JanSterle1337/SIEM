@@ -39,3 +39,13 @@ This package is the new foundation for the SIEM threat detection engine.
 3. Execute rules and anomaly detectors.
 4. Match alerts with ground truth in evaluation mode.
 5. Publish alerts using the new alert schema.
+
+## Current status
+
+- Kafka consumer skeleton is wired in.
+- Messages are routed by topic and normalized into `NormalizedEvent`.
+- Minimal correlation state is updated for IPs, hosts, trace IDs, and metrics.
+- Ground truth events are stored by the evaluator in evaluation mode.
+- The engine currently prints a short event summary for each processed message.
+
+Rules, anomaly detection, and alert publishing are intentionally not active yet.
