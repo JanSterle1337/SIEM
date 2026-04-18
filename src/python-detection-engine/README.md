@@ -49,7 +49,11 @@ This package is the new foundation for the SIEM threat detection engine.
 - The engine currently prints a short event summary for each processed message.
 - Active detection rules currently are:
   - `web.suspicious_path`
+  - `web.attack_payload`
   - `persistence.backdoor_user`
+  - `execution.sensitive_process`
+  - `persistence.reverse_shell_cron`
+  - `api.suspicious_internal_endpoint`
   - `correlation.distributed_exploit_trace`
 
 Alert publishing, anomaly detection, and multi-event correlation are intentionally not active yet.

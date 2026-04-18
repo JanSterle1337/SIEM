@@ -24,23 +24,34 @@ class DistributedExploitTraceRule(DetectionRule):
         if not trace_events:
             return []
 
-        has_suspicious_http = any(
-            item.get("class_uid") == 4002
-            and item.get("http_path") in {"/api/v1/debug", "/cgi-bin/vulnerable.sh"}
-            for item in trace_events
+        matched_http = next(
+            (
+                item
+                for item in trace_events
+                if item.get("class_uid") == 4002
+                and item.get("http_path") in {"/api/v1/debug", "/cgi-bin/vulnerable.sh"}
+            ),
+            None,
         )
-        has_internal_api = any(
-            item.get("class_uid") == 6003
-            and item.get("api_endpoint") == "/v2/internal/config"
-            for item in trace_events
+        matched_api = next(
+            (
+                item
+                for item in trace_events
+                if item.get("class_uid") == 6003
+                and item.get("api_endpoint") == "/v2/internal/config"
+            ),
+            None,
         )
-        has_sensitive_process = any(
-            item.get("message")
-            and "cat /etc/shadow" in item.get("message", "")
-            for item in trace_events
+        matched_process = next(
+            (
+                item
+                for item in trace_events
+                if item.get("message") and "cat /etc/shadow" in item.get("message", "")
+            ),
+            None,
         )
 
-        if not (has_suspicious_http and has_internal_api and has_sensitive_process):
+        if not (matched_http and matched_api and matched_process):
             return []
 
         alert_key = f"{self.metadata.rule_id}:{event.trace_id}"
@@ -65,9 +76,9 @@ class DistributedExploitTraceRule(DetectionRule):
                 suspected_cause="Coordinated exploit activity spanning web, API, and host process layers.",
                 evidence=[
                     {"type": "trace_id", "value": event.trace_id},
-                    {"type": "http_path", "value": "/api/v1/debug or /cgi-bin/vulnerable.sh"},
-                    {"type": "api_endpoint", "value": "/v2/internal/config"},
-                    {"type": "process", "value": "cat /etc/shadow"},
+                    {"type": "http_path", "value": matched_http.get("http_path")},
+                    {"type": "api_endpoint", "value": matched_api.get("api_endpoint")},
+                    {"type": "process", "value": matched_process.get("message")},
                 ],
             )
         ]
