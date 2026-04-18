@@ -19,6 +19,7 @@ class CorrelationState:
     metrics_by_host: dict[str, dict[str, list[float]]] = field(
         default_factory=lambda: defaultdict(dict)
     )
+    fired_alert_keys: set[str] = field(default_factory=set)
 
     def summary(self) -> dict[str, int]:
         return {
@@ -37,6 +38,16 @@ class CorrelationState:
             "src_ip": event.src_ip,
             "trace_id": event.trace_id,
             "message": event.message,
+            "http_path": (
+                (((event.raw_payload.get("http_request") or {}).get("url") or {}).get("path"))
+                if event.raw_payload
+                else None
+            ),
+            "api_endpoint": (
+                ((event.raw_payload.get("api") or {}).get("endpoint"))
+                if event.raw_payload
+                else None
+            ),
         }
 
         if event.src_ip:
@@ -63,3 +74,9 @@ class CorrelationState:
     def _trim(items: deque[dict[str, Any]], max_items: int) -> None:
         while len(items) > max_items:
             items.popleft()
+
+    def mark_alert_fired(self, key: str) -> bool:
+        if key in self.fired_alert_keys:
+            return False
+        self.fired_alert_keys.add(key)
+        return True

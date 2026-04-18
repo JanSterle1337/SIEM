@@ -47,6 +47,9 @@ This package is the new foundation for the SIEM threat detection engine.
 - Minimal correlation state is updated for IPs, hosts, trace IDs, and metrics.
 - Ground truth events are stored by the evaluator in evaluation mode.
 - The engine currently prints a short event summary for each processed message.
-- The first active detection rule is `web.suspicious_path`, which prints an alert summary when it matches.
+- Active detection rules currently are:
+  - `web.suspicious_path`
+  - `persistence.backdoor_user`
+  - `correlation.distributed_exploit_trace`
 
 Alert publishing, anomaly detection, and multi-event correlation are intentionally not active yet.

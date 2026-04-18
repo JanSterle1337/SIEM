@@ -1,3 +1,7 @@
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
 sources:
   nginx_logs:
     type: file
@@ -253,6 +257,7 @@ transforms:
       
       if err == null {
           msg_str = string!(parsed.msg)
+          trace_match, trace_err = parse_regex(msg_str, r'.*\[trace:(?P<trace_id>[A-Fa-f0-9]+)\].*')
 
           # 2. Determine Class: 1007 for Process, 1001 for General System
           if parsed.app == "kernel" {
@@ -277,6 +282,10 @@ transforms:
           }
           
           .message = msg_str
+
+          if trace_err == null && trace_match.trace_id != null && trace_match.trace_id != "" {
+              .trace_id = trace_match.trace_id
+          }
           
           # 5. Severity Logic
           if contains(msg_str, "Kill") || contains(msg_str, "Out of memory") || contains(msg_str, "BLOCK") {

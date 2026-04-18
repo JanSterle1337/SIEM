@@ -105,14 +105,29 @@ class DetectionPipeline:
         src_ip = alert.src_ip or "-"
         trace_id = alert.trace_id or "-"
         rule_id = alert.rule_id or "-"
+        cause = alert.suspected_cause or "-"
+        evidence = DetectionPipeline._format_alert_evidence(alert)
         return (
             "[alert] "
             f"severity={alert.severity} "
             f"priority={alert.priority_score} "
+            f"confidence={alert.confidence:.2f} "
             f"detection_type={alert.detection_type} "
             f"rule_id={rule_id} "
             f"title={alert.title} "
             f"host={host} "
             f"src_ip={src_ip} "
-            f"trace_id={trace_id}"
+            f"trace_id={trace_id} "
+            f"cause={cause} "
+            f"evidence={evidence}"
         )
+
+    @staticmethod
+    def _format_alert_evidence(alert: DetectionAlert) -> str:
+        if not alert.evidence:
+            return "-"
+
+        first_item = alert.evidence[0]
+        evidence_type = first_item.get("type", "unknown")
+        evidence_value = first_item.get("value", "-")
+        return f"{evidence_type}:{evidence_value}"

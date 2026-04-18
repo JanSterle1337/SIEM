@@ -67,7 +67,7 @@ class EnterpriseLogGenerator:
         size = random.randint(100, 15000)
         ts = datetime.now().strftime("%d/%b/%Y:%H:%M:%S +0000")
         
-        log = f'{ip} - - [{ts}] "GET {path} HTTP/1.1" {status} {size} "-" "{agent}"'
+        log = f'{ip} - - [{ts}] "GET {path} HTTP/1.1" {status} {size} "-" "{agent}" "{trace_id}"'
         outcome_str = "success" if str(status).startswith(("2", "3")) else "failure"
         self.write("http", log, intent=intent, outcome=outcome_str, trace_id=trace_id)
 
