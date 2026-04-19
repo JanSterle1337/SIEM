@@ -1,6 +1,7 @@
 from __future__ import annotations
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 from engine.schemas.events import NormalizedEvent
 
@@ -20,6 +21,7 @@ class CorrelationState:
         default_factory=lambda: defaultdict(dict)
     )
     fired_alert_keys: set[str] = field(default_factory=set)
+    anomaly_cooldowns: dict[str, datetime] = field(default_factory=dict)
 
     def summary(self) -> dict[str, int]:
         return {

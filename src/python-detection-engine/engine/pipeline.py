@@ -50,6 +50,7 @@ class DetectionPipeline:
 
         #print(self._format_event_summary(event))
         self._evaluate_rules(event)
+        self._evaluate_anomalies(event)
         return event
 
     @staticmethod
@@ -98,6 +99,14 @@ class DetectionPipeline:
             alerts = rule.evaluate(event, context)
             for alert in alerts:
                 print(self._format_alert_summary(alert))
+
+    def _evaluate_anomalies(self, event: NormalizedEvent) -> None:
+        if not self.config.anomaly_enabled:
+            return
+
+        alerts = self.anomaly_detector.evaluate(event, self.state)
+        for alert in alerts:
+            print(self._format_alert_summary(alert))
 
     @staticmethod
     def _format_alert_summary(alert: DetectionAlert) -> str:

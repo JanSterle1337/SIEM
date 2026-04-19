@@ -55,5 +55,7 @@ This package is the new foundation for the SIEM threat detection engine.
   - `persistence.reverse_shell_cron`
   - `api.suspicious_internal_endpoint`
   - `correlation.distributed_exploit_trace`
+- Active anomaly detector currently is:
+  - `baseline.statistical.v1` for `metrics-raw`
 
-Alert publishing, anomaly detection, and multi-event correlation are intentionally not active yet.
+Alert publishing is intentionally not active yet.
