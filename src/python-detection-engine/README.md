@@ -59,4 +59,4 @@ This package is the new foundation for the SIEM threat detection engine.
   - `baseline.statistical.v1` for `metrics-raw`
   - `baseline.fusion.v1` for recent metric anomaly + suspicious host log activity
 
-Alert publishing is intentionally not active yet.
+Alert publishing is active and sends generated alerts to `siem-alerts`.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from json import JSONDecodeError
+from typing import Any
 
 from engine.anomaly.base import AnomalyDetector
 from engine.config import EngineConfig
@@ -18,6 +19,7 @@ from engine.state import CorrelationState
 class DetectionPipeline:
     config: EngineConfig
     rules: list[DetectionRule]
+    alert_producer: Any | None = None
     state: CorrelationState = field(default_factory=CorrelationState)
     anomaly_detector: AnomalyDetector = field(default_factory=AnomalyDetector)
     evaluator: GroundTruthEvaluator = field(default_factory=GroundTruthEvaluator)
@@ -101,6 +103,7 @@ class DetectionPipeline:
                 if self.config.evaluation_enabled:
                     alert = self.evaluator.annotate_alert(alert)
                 print(self._format_alert_summary(alert))
+                self._publish_alert(alert)
 
     def _evaluate_anomalies(self, event: NormalizedEvent) -> None:
         if not self.config.anomaly_enabled:
@@ -111,6 +114,15 @@ class DetectionPipeline:
             if self.config.evaluation_enabled:
                 alert = self.evaluator.annotate_alert(alert)
             print(self._format_alert_summary(alert))
+            self._publish_alert(alert)
+
+    def _publish_alert(self, alert: DetectionAlert) -> None:
+        if self.alert_producer is None:
+            return
+        self.alert_producer.send(
+            self.topic_bindings.alerts_topic,
+            alert.to_document(),
+        )
 
     def print_evaluation_summary(self) -> None:
         summary = self.evaluator.build_summary()

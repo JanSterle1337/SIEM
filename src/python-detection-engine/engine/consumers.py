@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, KafkaProducer
 
 from engine.config import EngineConfig
 
@@ -33,4 +34,11 @@ def build_consumer(config: EngineConfig) -> KafkaConsumer:
         value_deserializer=lambda message: message.decode("utf-8"),
         auto_offset_reset="latest",
         enable_auto_commit=True,
+    )
+
+
+def build_producer(config: EngineConfig) -> KafkaProducer:
+    return KafkaProducer(
+        bootstrap_servers=config.kafka_brokers,
+        value_serializer=lambda value: json.dumps(value).encode("utf-8"),
     )
