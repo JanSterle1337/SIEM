@@ -98,6 +98,8 @@ class DetectionPipeline:
         for rule in self.rules:
             alerts = rule.evaluate(event, context)
             for alert in alerts:
+                if self.config.evaluation_enabled:
+                    alert = self.evaluator.annotate_alert(alert)
                 print(self._format_alert_summary(alert))
 
     def _evaluate_anomalies(self, event: NormalizedEvent) -> None:
@@ -106,7 +108,22 @@ class DetectionPipeline:
 
         alerts = self.anomaly_detector.evaluate(event, self.state)
         for alert in alerts:
+            if self.config.evaluation_enabled:
+                alert = self.evaluator.annotate_alert(alert)
             print(self._format_alert_summary(alert))
+
+    def print_evaluation_summary(self) -> None:
+        summary = self.evaluator.build_summary()
+        print("[evaluation] "
+              f"ground_truth_events={summary['ground_truth_events']} "
+              f"matched_ground_truth_events={summary['matched_ground_truth_events']} "
+              f"matched_alerts={summary['matched_alerts']} "
+              f"true_positives={summary['true_positives']} "
+              f"false_positives={summary['false_positives']} "
+              f"false_negatives={summary['false_negatives']} "
+              f"precision={summary['precision']} "
+              f"recall={summary['recall']} "
+              f"f1_score={summary['f1_score']}")
 
     @staticmethod
     def _format_alert_summary(alert: DetectionAlert) -> str:
@@ -116,6 +133,7 @@ class DetectionPipeline:
         rule_id = alert.rule_id or "-"
         cause = alert.suspected_cause or "-"
         evidence = DetectionPipeline._format_alert_evidence(alert)
+        gt_match = "matched" if alert.ground_truth_match else "unmatched"
         return (
             "[alert] "
             f"severity={alert.severity} "
@@ -127,6 +145,7 @@ class DetectionPipeline:
             f"host={host} "
             f"src_ip={src_ip} "
             f"trace_id={trace_id} "
+            f"ground_truth={gt_match} "
             f"cause={cause} "
             f"evidence={evidence}"
         )

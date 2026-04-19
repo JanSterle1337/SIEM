@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
+
+
+LOCAL_TZ = datetime.now().astimezone().tzinfo
 
 
 @dataclass(slots=True)
@@ -26,7 +29,7 @@ class DetectionAlert:
     evidence: list[dict[str, Any]] = field(default_factory=list)
     ground_truth_match: dict[str, Any] | None = None
     alert_id: str = field(default_factory=lambda: str(uuid4()))
-    created_at: datetime = field(default_factory=lambda: datetime.now(tz=UTC))
+    created_at: datetime = field(default_factory=lambda: datetime.now(tz=LOCAL_TZ))
 
     def to_document(self) -> dict[str, Any]:
         document = asdict(self)

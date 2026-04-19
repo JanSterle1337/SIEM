@@ -5,6 +5,9 @@ from datetime import UTC, datetime
 from typing import Any
 
 
+LOCAL_TZ = datetime.now().astimezone().tzinfo or UTC
+
+
 def _parse_datetime(value: Any) -> datetime:
     if isinstance(value, datetime):
         return value
@@ -15,11 +18,11 @@ def _parse_datetime(value: Any) -> datetime:
         try:
             parsed = datetime.fromisoformat(normalized)
         except ValueError:
-            return datetime.now(tz=UTC)
+            return datetime.now(tz=LOCAL_TZ)
         if parsed.tzinfo is None:
-            return parsed.replace(tzinfo=UTC)
+            return parsed.replace(tzinfo=LOCAL_TZ)
         return parsed
-    return datetime.now(tz=UTC)
+    return datetime.now(tz=LOCAL_TZ)
 
 
 @dataclass(slots=True)

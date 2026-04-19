@@ -17,7 +17,12 @@ def main() -> None:
     consumer = build_consumer(config)
     print("  Consumer loop: enabled")
 
-    for message in consumer:
-        topic = message.topic
-        raw_message = message.value
-        pipeline.process_message(topic, raw_message)
+    try:
+        for message in consumer:
+            topic = message.topic
+            raw_message = message.value
+            pipeline.process_message(topic, raw_message)
+    except KeyboardInterrupt:
+        if config.evaluation_enabled:
+            pipeline.print_evaluation_summary()
+        print("SIEM Threat Detection Engine stopped.")
