@@ -20,6 +20,9 @@ class CorrelationState:
     metrics_by_host: dict[str, dict[str, list[float]]] = field(
         default_factory=lambda: defaultdict(dict)
     )
+    recent_metric_anomalies: dict[str, deque[dict[str, Any]]] = field(
+        default_factory=lambda: defaultdict(deque)
+    )
     fired_alert_keys: set[str] = field(default_factory=set)
     anomaly_cooldowns: dict[str, datetime] = field(default_factory=dict)
 
@@ -82,3 +85,22 @@ class CorrelationState:
             return False
         self.fired_alert_keys.add(key)
         return True
+
+    def remember_metric_anomaly(
+        self,
+        host: str,
+        metric_name: str,
+        metric_value: float,
+        zscore: float,
+        timestamp: datetime,
+        max_items: int = 10,
+    ) -> None:
+        anomaly = {
+            "timestamp": timestamp,
+            "metric_name": metric_name,
+            "metric_value": metric_value,
+            "zscore": zscore,
+        }
+        self.recent_metric_anomalies[host].append(anomaly)
+        while len(self.recent_metric_anomalies[host]) > max_items:
+            self.recent_metric_anomalies[host].popleft()

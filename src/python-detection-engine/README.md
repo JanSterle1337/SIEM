@@ -57,5 +57,6 @@ This package is the new foundation for the SIEM threat detection engine.
   - `correlation.distributed_exploit_trace`
 - Active anomaly detector currently is:
   - `baseline.statistical.v1` for `metrics-raw`
+  - `baseline.fusion.v1` for recent metric anomaly + suspicious host log activity
 
 Alert publishing is intentionally not active yet.
