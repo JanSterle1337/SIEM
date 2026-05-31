@@ -1,7 +1,6 @@
-use reqwest::{Client, StatusCode};
+use reqwest::Client;
 use serde_json::Value;
 use crate::config::Config;
-use crate::models::OcsfLog;
 
 pub struct QuickwitService {
     client: Client,
@@ -16,19 +15,25 @@ impl QuickwitService {
         }
     }
 
-    pub async fn ingest_log(&self, log: &OcsfLog) -> Result<(), String> {
-        let url = format!("{}/api/v1/ocsf-events/ingest", self.base_url);
+    pub async fn ingest_document(&self, index: &str, document: &Value) -> Result<(), String> {
+        let url = format!("{}/api/v1/{}/ingest?commit=force", self.base_url, index);
+        let payload = serde_json::to_string(document)
+            .map_err(|e| format!("serialize error: {}", e))?
+            + "\n";
 
         let response = self.client.post(url)
-            .json(log)
+            .header("Content-Type", "application/json")
+            .body(payload)
             .send()
             .await
             .map_err(|e| e.to_string())?;
 
-        if (response.status().is_success()) {
+        if response.status().is_success() {
             Ok(())
         } else {
-            Err(format!("Quickwit error: {}", response.status()))
+            let status = response.status();
+            let body = response.text().await.unwrap_or_else(|_| "<failed to read body>".to_string());
+            Err(format!("Quickwit error: {} body: {}", status, body))
         }
     }
 

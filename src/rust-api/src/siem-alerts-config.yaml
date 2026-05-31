@@ -3,22 +3,65 @@ index_id: siem-alerts
 doc_mapping:
   mode: dynamic
   field_mappings:
-    - name: alert_type
+    - name: created_at
+      type: datetime
+      input_formats: ["unix_timestamp"]
+      fast: true
+    - name: title
       type: text
       tokenizer: default
-      fast: true
+    - name: description
+      type: text
+      tokenizer: default
     - name: severity
       type: text
       tokenizer: default
       fast: true
-    - name: source_ip
+    - name: detection_type
       type: text
       tokenizer: default
       fast: true
-    - name: event_count
+    - name: attack_stage
+      type: text
+      tokenizer: default
+      fast: true
+    - name: rule_id
+      type: text
+      tokenizer: default
+      fast: true
+    - name: model_id
+      type: text
+      tokenizer: default
+      fast: true
+    - name: host
+      type: text
+      tokenizer: default
+      fast: true
+    - name: src_ip
+      type: text
+      tokenizer: default
+      fast: true
+    - name: trace_id
+      type: text
+      tokenizer: default
+      fast: true
+    - name: status
+      type: text
+      tokenizer: default
+      fast: true
+    - name: priority_score
       type: u64
       fast: true
-    - name: timestamp
-      type: datetime
-      input_formats: ["unix_timestamp"]
+    - name: confidence
+      type: f64
       fast: true
+    - name: evidence
+      type: json
+    - name: ground_truth_match
+      type: json
+    - name: suspected_cause
+      type: text
+      tokenizer: default
+
+search_settings:
+  default_search_fields: ["title", "description", "severity", "rule_id", "model_id", "host", "src_ip", "trace_id", "suspected_cause"]

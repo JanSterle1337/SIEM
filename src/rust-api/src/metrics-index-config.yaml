@@ -1,0 +1,25 @@
+version: 0.7
+index_id: metrics-raw
+doc_mapping:
+  mode: dynamic
+  field_mappings:
+    - name: timestamp
+      type: datetime
+      input_formats: ["rfc3339", "unix_timestamp"]
+      fast: true
+    - name: host
+      type: text
+      tokenizer: default
+      fast: true
+    - name: metric_name
+      type: text
+      tokenizer: default
+      fast: true
+    - name: value
+      type: f64
+      fast: true
+    - name: tags
+      type: json
+
+search_settings:
+  default_search_fields: ["host", "metric_name"]

@@ -1,0 +1,30 @@
+version: 0.7
+index_id: raw-logs
+doc_mapping:
+  mode: dynamic
+  field_mappings:
+    - name: timestamp
+      type: datetime
+      input_formats: ["rfc3339", "unix_timestamp"]
+      fast: true
+    - name: label
+      type: text
+      tokenizer: default
+      fast: true
+    - name: file
+      type: text
+      tokenizer: default
+    - name: host
+      type: text
+      tokenizer: default
+      fast: true
+    - name: source_type
+      type: text
+      tokenizer: default
+      fast: true
+    - name: message
+      type: text
+      tokenizer: default
+
+search_settings:
+  default_search_fields: ["message", "label", "file", "host"]

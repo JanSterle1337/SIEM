@@ -7,7 +7,6 @@ use serde_json::Value;
 
 use crate::config::Config;
 use crate::services::QuickwitService;
-use crate::models::{OcsfLog, SiemAlert};
 
 pub async fn start_recording(config: Config, qw_service: Arc<QuickwitService>) {
     let consumer: StreamConsumer = ClientConfig::new()
@@ -20,7 +19,16 @@ pub async fn start_recording(config: Config, qw_service: Arc<QuickwitService>) {
         .create()
         .expect("Consumer creation failed");
 
-    consumer.subscribe(&["ocsf-events", "siem-alerts"])
+    consumer.subscribe(&[
+        "ocsf-events",
+        "siem-alerts",
+        /*"metrics-raw",
+        "raw-api",
+        "raw-auth",
+        "raw-firewall",
+        "raw-nginx",
+        "raw-syslog",*/
+    ])
         .expect("Can't subscribe to specified topics");
 
     println!("🧵 Worker Thread: Monitoring Redpanda topics...");
@@ -35,23 +43,53 @@ pub async fn start_recording(config: Config, qw_service: Arc<QuickwitService>) {
 
         if payload.is_empty() { continue; }
 
-        match topic {
-            "ocsf-events" => {
-                if let Ok(log) = serde_json::from_str::<OcsfLog>(payload) {
-                    let _ = qw_service.ingest_log(&log).await;
+        let index = match index_for_topic(topic) {
+            Some(index) => index,
+            None => {
+                println!("Unknown topic: {}", topic);
+                continue;
+            }
+        };
+
+        println!("Consumed topic: {} -> target index: {}", topic, index);
+        println!(
+            "Payload preview [{}]: {}",
+            topic,
+            truncate_payload(payload, 240)
+        );
+
+        match serde_json::from_str::<Value>(payload) {
+            Ok(document) => {
+                if let Err(err) = qw_service.ingest_document(index, &document).await {
+                    eprintln!("Quickwit ingest failed for topic {} -> {}: {}", topic, index, err);
+                } else {
+                    println!("Ingested document into index: {}", index);
                 }
-            },
-            "siem-alerts" => {
-                // For alerts, we can use a more direct Value approach or the SiemAlert struct
-                if let Ok(alert) = serde_json::from_str::<SiemAlert>(payload) {
-                    // We'll add a generic ingest method to service later if needed
-                    let _ = qw_service.search("siem-alerts", "TODO").await;
-                    // For now, let's just log it to console to verify
-                    println!("🚨 Alert Worker: Received {}", alert.alert_type);
-                }
-            },
-            _ => println!("Unknown topic: {}", topic),
+            }
+            Err(err) => {
+                eprintln!("JSON parse failed for topic {}: {}", topic, err);
+            }
         }
     }
 
+}
+
+fn index_for_topic(topic: &str) -> Option<&'static str> {
+    match topic {
+        "ocsf-events" => Some("ocsf-events"),
+        "siem-alerts" => Some("siem-alerts"),
+        "metrics-raw" => Some("metrics-raw"),
+        "raw-api" | "raw-auth" | "raw-firewall" | "raw-nginx" | "raw-syslog" => Some("raw-logs"),
+        _ => None,
+    }
+}
+
+fn truncate_payload(payload: &str, max_len: usize) -> String {
+    if payload.len() <= max_len {
+        return payload.to_string();
+    }
+
+    let mut truncated = payload.chars().take(max_len).collect::<String>();
+    truncated.push_str("...");
+    truncated
 }
