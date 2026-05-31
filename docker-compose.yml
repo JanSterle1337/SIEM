@@ -3,15 +3,22 @@ services:
     image: docker.redpanda.com/redpandadata/redpanda:v23.3.11
     container_name: redpanda
     command:
-      - redpanda start
-      - --smp 1
+      - redpanda
+      - start
+      - --smp
+      - "1"
       - --overprovisioned
-      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
-      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
-      - --mode dev-container
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://localhost:19092
+      - --mode
+      - dev-container
     ports:
       - "19092:19092"
       - "9092:9092"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
     healthcheck:
       test: ["CMD", "rpk", "cluster", "health"]
       interval: 5s
@@ -19,16 +26,48 @@ services:
       retries: 5
 
   redpanda-provisioner:
-    image: docker.redpanda.com/redpandadata/redpanda:latest
+    image: docker.redpanda.com/redpandadata/redpanda:v23.3.11
+    restart: "no"
     depends_on:
-      - redpanda
-    entrypoint: [ "/bin/sh", "-c" ]
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        sleep 10;
-        rpk topic create ocsf-events --brokers redpanda:9092;
-        rpk topic create metrics-raw --brokers redpanda:9092;
-        rpk topic create ground-truth-events --brokers redpanda:9092;
+        set -e
+
+        BROKERS="redpanda:9092"
+
+        TOPICS="
+        ocsf-events
+        metrics-raw
+        ground-truth-events
+        siem-alerts
+        raw-api
+        raw-auth
+        raw-firewall
+        raw-syslog
+        raw-nginx
+        "
+
+        echo "Deleting old topics if they exist..."
+
+        rpk topic delete $$TOPICS --brokers "$$BROKERS" || true
+
+        echo "Waiting for topic deletion to settle..."
+        sleep 3
+
+        echo "Creating fresh topics..."
+
+        for topic in $$TOPICS; do
+          echo "Creating topic: $$topic"
+          rpk topic create "$$topic" --brokers "$$BROKERS" || true
+        done
+
+        echo "Current topics:"
+        rpk topic list --brokers "$$BROKERS"
+
+        echo "Redpanda topics recreated."
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.4.3
@@ -51,6 +90,8 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+      redpanda-provisioner:
+        condition: service_completed_successfully
     volumes:
       - ./configs/vector.yaml:/etc/vector/vector.yaml:ro
       - ./scripts/data:/var/log/siem:ro
@@ -71,3 +112,4 @@ services:
 
 volumes:
   vector_data:
+  redpanda_data:
