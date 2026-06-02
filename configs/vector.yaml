@@ -359,6 +359,7 @@ transforms:
       if err == null {
           . = parsed
           # Ensure types are correct for Quickwit indexing
+          .timestamp = parse_timestamp(.timestamp, format: "%+") ?? parse_timestamp(.timestamp, format: "%FT%T.%f") ?? now()
           .value = to_float(.value) ?? 0.0
           del(.message)
       } else {

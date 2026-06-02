@@ -34,4 +34,5 @@ class DetectionAlert:
     def to_document(self) -> dict[str, Any]:
         document = asdict(self)
         document["created_at"] = self.created_at.timestamp()
+        document["evidence"] = {"items": self.evidence}
         return document
