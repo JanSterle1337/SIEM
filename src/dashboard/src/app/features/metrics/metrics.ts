@@ -5,17 +5,17 @@ import { FormsModule } from '@angular/forms';
 import { SiemService } from '../../services/siem.service';
 
 @Component({
-  selector: 'app-logs',
-  imports: [CommonModule, FormsModule],
-  templateUrl: './logs.html',
-  styleUrl: './logs.css',
+  selector: 'app-metrics',
   standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './metrics.html',
+  styleUrl: './metrics.css',
 })
-export class Logs implements OnInit {
+export class Metrics implements OnInit {
   private siemService = inject(SiemService);
   private cdr = inject(ChangeDetectorRef);
 
-  logs: any[] = [];
+  metrics: any[] = [];
   total = 0;
   elapsedMs = 0;
   isLoading = false;
@@ -24,23 +24,22 @@ export class Logs implements OnInit {
   expandedRow: number | null = null;
 
   filters = {
-    query: '*',
     host: '',
-    source_type: '',
+    metric_name: '',
     limit: 100,
   };
 
   ngOnInit() {
-    this.loadLogs();
+    this.loadMetrics();
   }
 
-  loadLogs() {
+  loadMetrics() {
     this.isLoading = true;
     this.error = '';
 
-    this.siemService.getLogs(this.filters).subscribe({
+    this.siemService.getMetrics(this.filters).subscribe({
       next: (response) => {
-        this.logs = response.items;
+        this.metrics = response.items;
         this.total = response.total;
         this.elapsedMs = response.elapsed_ms;
         this.lastUpdated = this.siemService.formatDateTime(Date.now());
@@ -48,7 +47,7 @@ export class Logs implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = err?.error?.error || 'Logs request failed';
+        this.error = err?.error?.error || 'Metrics request failed';
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -57,27 +56,18 @@ export class Logs implements OnInit {
 
   resetFilters() {
     this.filters = {
-      query: '*',
       host: '',
-      source_type: '',
+      metric_name: '',
       limit: 100,
     };
-    this.loadLogs();
+    this.loadMetrics();
   }
 
   toggleRow(index: number) {
     this.expandedRow = this.expandedRow === index ? null : index;
   }
 
-  logTime(log: any): string {
-    return this.siemService.formatDateTime(log.time || log.timestamp || log.created_at);
-  }
-
-  logHost(log: any): string {
-    return log.device?.hostname || log.host || log.metadata?.product?.name || '-';
-  }
-
-  logSourceIp(log: any): string {
-    return log.src_endpoint?.ip || log.src_ip || '-';
+  metricTime(metric: any): string {
+    return this.siemService.formatDateTime(metric.timestamp);
   }
 }

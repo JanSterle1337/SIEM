@@ -8,20 +8,20 @@ pub struct OcsfLog {
     pub disposition_id: u8,
     pub message: String,
     pub src_endpoint: Option<Endpoint>,
-    pub metadata: Metadata
+    pub metadata: Metadata,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Endpoint {
-    pub ip: String
+    pub ip: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Metadata {
-    pub product: Product
+    pub product: Product,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Product {
-    pub name: String
+    pub name: String,
 }

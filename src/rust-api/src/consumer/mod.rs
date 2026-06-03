@@ -1,1 +1,2 @@
-pub(crate) mod worker;
+pub mod parquet_worker;
+pub mod worker;

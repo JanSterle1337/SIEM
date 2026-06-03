@@ -2,7 +2,7 @@
   <div class="px-5 py-4 bg-[#111827] border-b border-slate-800">
     <div class="flex items-center justify-between gap-4 mb-4">
       <div>
-        <h2 class="text-lg font-semibold text-white">Logs</h2>
+        <h2 class="text-lg font-semibold text-white">Metrics</h2>
         <p class="text-xs text-slate-500 font-mono">
           <span *ngIf="isLoading" class="text-blue-300">Searching...</span>
           <span *ngIf="!isLoading">{{ total }} matches · {{ elapsedMs }} ms</span>
@@ -14,19 +14,17 @@
                 class="px-3 py-2 text-xs rounded border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-40">
           Reset
         </button>
-        <button (click)="loadLogs()" [disabled]="isLoading"
+        <button (click)="loadMetrics()" [disabled]="isLoading"
                 class="px-3 py-2 text-xs rounded bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-wait">
           {{ isLoading ? 'Applying...' : 'Apply filters' }}
         </button>
       </div>
     </div>
 
-    <form class="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_120px] gap-3" (ngSubmit)="loadLogs()">
-      <input name="query" [(ngModel)]="filters.query" placeholder="Search query"
-             class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+    <form class="grid grid-cols-1 md:grid-cols-[1fr_1fr_120px] gap-3" (ngSubmit)="loadMetrics()">
       <input name="host" [(ngModel)]="filters.host" placeholder="Host"
              class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-      <input name="source_type" [(ngModel)]="filters.source_type" placeholder="Source type"
+      <input name="metric_name" [(ngModel)]="filters.metric_name" placeholder="Metric name"
              class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
       <input name="limit" [(ngModel)]="filters.limit" type="number" min="1" max="500"
              class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
@@ -43,41 +41,33 @@
     </div>
 
     <table class="w-full text-left text-[12px] font-mono border-separate border-spacing-0">
-      <thead class="sticky top-0 bg-[#1a202c] shadow-md z-10">
+      <thead class="sticky top-0 bg-[#1a202c] z-10">
       <tr class="text-slate-500 uppercase">
-        <th class="p-3 border-b border-slate-800">Time</th>
+        <th class="p-3 border-b border-slate-800">Timestamp</th>
         <th class="p-3 border-b border-slate-800">Host</th>
-        <th class="p-3 border-b border-slate-800">Source IP</th>
-        <th class="p-3 border-b border-slate-800">Status</th>
-        <th class="p-3 border-b border-slate-800">Message</th>
+        <th class="p-3 border-b border-slate-800">Metric</th>
+        <th class="p-3 border-b border-slate-800">Value</th>
       </tr>
       </thead>
       <tbody>
-      <ng-container *ngFor="let log of logs; let i = index">
-        <tr (click)="toggleRow(i)" class="hover:bg-blue-600/5 cursor-pointer transition-colors">
-          <td class="p-3 text-blue-400 whitespace-nowrap">{{ logTime(log) }}</td>
-          <td class="p-3 text-slate-300">{{ logHost(log) }}</td>
-          <td class="p-3 text-slate-300">{{ logSourceIp(log) }}</td>
-          <td class="p-3">
-            <span [class.text-red-500]="log.status === 'Failure'"
-                  [class.text-green-500]="log.status === 'Success'">
-              {{ log.status || 'INFO' }}
-            </span>
-          </td>
-          <td class="p-3 text-slate-400 truncate max-w-md">{{ log.message || '-' }}</td>
+      <ng-container *ngFor="let metric of metrics; let i = index">
+        <tr (click)="toggleRow(i)" class="hover:bg-blue-600/5 cursor-pointer">
+          <td class="p-3 text-blue-400 whitespace-nowrap">{{ metricTime(metric) }}</td>
+          <td class="p-3 text-slate-300">{{ metric.host || '-' }}</td>
+          <td class="p-3 text-slate-300">{{ metric.metric_name || '-' }}</td>
+          <td class="p-3 text-slate-100">{{ metric.value ?? '-' }}</td>
         </tr>
-
         <tr *ngIf="expandedRow === i" class="bg-black/20">
-          <td colspan="5" class="p-4 bg-[#05070a] border-y border-blue-900/30">
-            <pre class="text-[11px] text-blue-300 overflow-x-auto">{{ log | json }}</pre>
+          <td colspan="4" class="p-4 bg-[#05070a] border-y border-blue-900/30">
+            <pre class="text-[11px] text-blue-300 overflow-x-auto">{{ metric | json }}</pre>
           </td>
         </tr>
       </ng-container>
       </tbody>
     </table>
 
-    <div *ngIf="!isLoading && logs.length === 0" class="p-10 text-center text-slate-500">
-      No logs found.
+    <div *ngIf="!isLoading && metrics.length === 0" class="p-10 text-center text-slate-500">
+      No metrics found.
     </div>
   </div>
 </div>

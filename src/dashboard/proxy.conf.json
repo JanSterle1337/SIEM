@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "http://rust-api:3000",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

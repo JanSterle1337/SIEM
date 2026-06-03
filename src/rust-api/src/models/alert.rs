@@ -8,5 +8,5 @@ pub struct SiemAlert {
     pub event_count: u64,
     pub window_seconds: u64,
     pub timestamp: f64,
-    pub msg: String
+    pub msg: String,
 }

@@ -1,4 +1,4 @@
-pub mod log;
 pub mod alert;
-pub use log::OcsfLog;
+pub mod log;
 pub use alert::SiemAlert;
+pub use log::OcsfLog;

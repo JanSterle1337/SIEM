@@ -1,6 +1,17 @@
 use crate::config::Config;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct QuickwitSearchResponse {
+    #[serde(default)]
+    pub num_hits: u64,
+    #[serde(default)]
+    pub elapsed_time_micros: u64,
+    #[serde(default)]
+    pub hits: Vec<Value>,
+}
 
 pub struct QuickwitService {
     client: Client,
@@ -69,19 +80,26 @@ impl QuickwitService {
         }
     }
 
-    pub async fn search(&self, index: &str, query: &str) -> Result<Value, String> {
-        let url = format!(
-            "{}/api/v1/{}/search?query={}&max_hits=50",
-            self.base_url, index, query
-        );
+    pub async fn search(
+        &self,
+        index: &str,
+        query: &str,
+        max_hits: usize,
+    ) -> Result<QuickwitSearchResponse, String> {
+        let url = format!("{}/api/v1/{}/search", self.base_url, index);
+        let max_hits = max_hits.to_string();
 
         let response = self
             .client
             .get(url)
+            .query(&[("query", query), ("max_hits", max_hits.as_str())])
             .send()
             .await
             .map_err(|e| e.to_string())?;
 
-        response.json::<Value>().await.map_err(|e| e.to_string())
+        response
+            .json::<QuickwitSearchResponse>()
+            .await
+            .map_err(|e| e.to_string())
     }
 }

@@ -1,12 +1,12 @@
 pub struct Config {
     pub quickwit_url: String,
     pub kafka_brokers: String,
-    pub server_port: u16
+    pub server_port: u16,
+    pub parquet_storage_path: String,
 }
 
 impl Config {
     pub fn from_env() -> Self {
-
         dotenvy::dotenv().ok();
 
         Self {
@@ -18,6 +18,8 @@ impl Config {
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()
                 .expect("SERVER_PORT must be a number"),
+            parquet_storage_path: std::env::var("PARQUET_STORAGE_PATH")
+                .unwrap_or_else(|_| "./parquet_data".to_string()),
         }
     }
 }
