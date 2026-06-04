@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 
 import { SiemService } from '../../services/siem.service';
 
+type MetricFilterKey = 'host' | 'metric_name';
+
 @Component({
   selector: 'app-metrics',
   standalone: true,
@@ -22,6 +24,8 @@ export class Metrics implements OnInit {
   error = '';
   lastUpdated = '';
   expandedRow: number | null = null;
+  hostOptions: string[] = [];
+  metricNameOptions: string[] = [];
 
   filters = {
     host: '',
@@ -43,6 +47,7 @@ export class Metrics implements OnInit {
         this.total = response.total;
         this.elapsedMs = response.elapsed_ms;
         this.lastUpdated = this.siemService.formatDateTime(Date.now());
+        this.updateFilterOptions();
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -70,4 +75,27 @@ export class Metrics implements OnInit {
   metricTime(metric: any): string {
     return this.siemService.formatDateTime(metric.timestamp);
   }
+
+  activeFilters(): Array<{ label: string; key: MetricFilterKey }> {
+    const filters: Array<{ label: string; key: MetricFilterKey }> = [
+      { label: `Host: ${this.filters.host}`, key: 'host' },
+      { label: `Metric: ${this.filters.metric_name}`, key: 'metric_name' },
+    ];
+
+    return filters.filter((filter) => this.filters[filter.key] !== '');
+  }
+
+  clearFilter(key: MetricFilterKey) {
+    this.filters[key] = '';
+    this.loadMetrics();
+  }
+
+  private updateFilterOptions() {
+    this.hostOptions = uniqueSorted(this.metrics.map((metric) => metric.host).filter(Boolean));
+    this.metricNameOptions = uniqueSorted(this.metrics.map((metric) => metric.metric_name).filter(Boolean));
+  }
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }

@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 
 import { SiemService } from '../../services/siem.service';
 
+type LogFilterKey = 'query' | 'host' | 'source_type';
+
 @Component({
   selector: 'app-logs',
   imports: [CommonModule, FormsModule],
@@ -22,6 +24,8 @@ export class Logs implements OnInit {
   error = '';
   lastUpdated = '';
   expandedRow: number | null = null;
+  hostOptions: string[] = [];
+  eventClassOptions: string[] = [];
 
   filters = {
     query: '*',
@@ -44,6 +48,7 @@ export class Logs implements OnInit {
         this.total = response.total;
         this.elapsedMs = response.elapsed_ms;
         this.lastUpdated = this.siemService.formatDateTime(Date.now());
+        this.updateFilterOptions();
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -80,4 +85,31 @@ export class Logs implements OnInit {
   logSourceIp(log: any): string {
     return log.src_endpoint?.ip || log.src_ip || '-';
   }
+
+  activeFilters(): Array<{ label: string; key: LogFilterKey }> {
+    const filters: Array<{ label: string; key: LogFilterKey }> = [
+      { label: `Query: ${this.filters.query}`, key: 'query' },
+      { label: `Host: ${this.filters.host}`, key: 'host' },
+      { label: `Class: ${this.filters.source_type}`, key: 'source_type' },
+    ];
+
+    return filters.filter((filter) => {
+      const value = this.filters[filter.key];
+      return value !== '' && value !== '*';
+    });
+  }
+
+  clearFilter(key: LogFilterKey) {
+    this.filters[key] = key === 'query' ? '*' : '';
+    this.loadLogs();
+  }
+
+  private updateFilterOptions() {
+    this.hostOptions = uniqueSorted(this.logs.map((log) => this.logHost(log)).filter((host) => host !== '-'));
+    this.eventClassOptions = uniqueSorted(this.logs.map((log) => log.class_name).filter(Boolean));
+  }
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }

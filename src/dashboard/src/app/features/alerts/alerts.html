@@ -21,17 +21,56 @@
   </div>
 
   <form class="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_120px] gap-3" (ngSubmit)="applyFilters()">
-    <input name="severity" [(ngModel)]="filters.severity" placeholder="Severity"
-           class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-    <input name="detection_type" [(ngModel)]="filters.detection_type" placeholder="Detection type"
-           class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-    <input name="status" [(ngModel)]="filters.status" placeholder="Status"
-           class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-    <input name="host" [(ngModel)]="filters.host" placeholder="Host"
-           class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-    <input name="limit" [(ngModel)]="filters.limit" type="number" min="1" max="500"
-           class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+    <label class="flex flex-col gap-1">
+      <span class="text-[10px] uppercase text-slate-500 font-semibold">Severity</span>
+      <select name="severity" [(ngModel)]="filters.severity"
+              class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+        <option value="">Any severity</option>
+        <option *ngFor="let severity of severityOptions" [value]="severity">{{ severity }}</option>
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-[10px] uppercase text-slate-500 font-semibold">Detection type</span>
+      <select name="detection_type" [(ngModel)]="filters.detection_type"
+              class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+        <option value="">Any type</option>
+        <option *ngFor="let type of detectionTypeOptions" [value]="type">{{ type }}</option>
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-[10px] uppercase text-slate-500 font-semibold">Status</span>
+      <select name="status" [(ngModel)]="filters.status"
+              class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+        <option value="">Any status</option>
+        <option *ngFor="let status of statusOptions" [value]="status">{{ status }}</option>
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-[10px] uppercase text-slate-500 font-semibold">Host</span>
+      <select name="host" [(ngModel)]="filters.host"
+              class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+        <option value="">Any host</option>
+        <option *ngFor="let host of hostOptions" [value]="host">{{ host }}</option>
+      </select>
+    </label>
+    <label class="flex flex-col gap-1">
+      <span class="text-[10px] uppercase text-slate-500 font-semibold">Limit</span>
+      <select name="limit" [(ngModel)]="filters.limit"
+              class="bg-[#111827] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+        <option [ngValue]="50">50</option>
+        <option [ngValue]="100">100</option>
+        <option [ngValue]="250">250</option>
+        <option [ngValue]="500">500</option>
+      </select>
+    </label>
   </form>
+
+  <div *ngIf="activeFilters().length" class="flex flex-wrap gap-2">
+    <button *ngFor="let filter of activeFilters()" type="button" (click)="clearFilter(filter.key)"
+            class="text-[11px] px-2 py-1 rounded border border-blue-500/30 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20">
+      {{ filter.label }} ×
+    </button>
+  </div>
 
   <div *ngIf="error" class="p-3 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">
     {{ error }}

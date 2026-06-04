@@ -22,13 +22,40 @@
     </div>
 
     <form class="grid grid-cols-1 md:grid-cols-[1fr_1fr_120px] gap-3" (ngSubmit)="loadMetrics()">
-      <input name="host" [(ngModel)]="filters.host" placeholder="Host"
-             class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-      <input name="metric_name" [(ngModel)]="filters.metric_name" placeholder="Metric name"
-             class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-      <input name="limit" [(ngModel)]="filters.limit" type="number" min="1" max="500"
-             class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+      <label class="flex flex-col gap-1">
+        <span class="text-[10px] uppercase text-slate-500 font-semibold">Host</span>
+        <select name="host" [(ngModel)]="filters.host"
+                class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+          <option value="">Any host</option>
+          <option *ngFor="let host of hostOptions" [value]="host">{{ host }}</option>
+        </select>
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-[10px] uppercase text-slate-500 font-semibold">Metric</span>
+        <select name="metric_name" [(ngModel)]="filters.metric_name"
+                class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+          <option value="">Any metric</option>
+          <option *ngFor="let metricName of metricNameOptions" [value]="metricName">{{ metricName }}</option>
+        </select>
+      </label>
+      <label class="flex flex-col gap-1">
+        <span class="text-[10px] uppercase text-slate-500 font-semibold">Limit</span>
+        <select name="limit" [(ngModel)]="filters.limit"
+                class="bg-[#0b0f19] border border-slate-700 rounded px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+          <option [ngValue]="250">250</option>
+          <option [ngValue]="500">500</option>
+        </select>
+      </label>
     </form>
+
+    <div *ngIf="activeFilters().length" class="flex flex-wrap gap-2 mt-3">
+      <button *ngFor="let filter of activeFilters()" type="button" (click)="clearFilter(filter.key)"
+              class="text-[11px] px-2 py-1 rounded border border-blue-500/30 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20">
+        {{ filter.label }} ×
+      </button>
+    </div>
   </div>
 
   <div *ngIf="error" class="m-4 p-3 border border-red-500/40 bg-red-500/10 text-red-300 text-sm rounded">

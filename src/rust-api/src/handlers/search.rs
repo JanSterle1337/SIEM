@@ -69,10 +69,10 @@ pub async fn handle_get_logs(
 ) -> ApiResult<ApiListResponse> {
     let mut clauses = Vec::new();
     push_text_query(&mut clauses, params.query.as_deref());
-    push_field_clause(&mut clauses, "host", params.host.as_deref());
-    push_field_clause(&mut clauses, "source_type", params.source_type.as_deref());
+    push_field_clause(&mut clauses, "device.hostname", params.host.as_deref());
+    push_field_clause(&mut clauses, "class_name", params.source_type.as_deref());
 
-    search_list(&qw, "raw-logs", clauses, params.limit).await
+    search_list(&qw, "ocsf-events", clauses, params.limit).await
 }
 
 pub async fn handle_get_metrics(
